@@ -1,0 +1,33 @@
+{
+  "type": "module",
+  "name": "api_koa",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon app.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@koa/multer": "^3.0.2",
+    "bcryptjs": "^2.4.3",
+    "crypto": "^1.0.1",
+    "dotenv": "^16.4.5",
+    "joi": "^17.9.1",
+    "jsonwebtoken": "^9.0.0",
+    "koa": "^2.14.1",
+    "koa-bodyparser": "^4.4.0",
+    "koa-range": "^0.3.0",
+    "koa-router": "^12.0.0",
+    "koa-static": "^5.0.0",
+    "koa2-cors": "^2.0.6",
+    "mongoose": "^7.1.0",
+    "multer": "1.4.5-lts.1",
+    "nodemailer": "^6.9.2",
+    "socket.io": "^4.6.1",
+    "uuid": "^9.0.1"
+  }
+}
