@@ -14,10 +14,15 @@ dist-ssr
 app/keys/*.key
 
 public/admin_avatar/*
+!public/admin_avatar/.gitkeep
 public/article_images/*
+!public/article_images/.gitkeep
 public/user_avatar/*
+!public/user_avatar/.gitkeep
 public/video_images/*
+!public/video_images/.gitkeep
 public/videos/*
+!public/videos/.gitkeep
 
 *.local
 
