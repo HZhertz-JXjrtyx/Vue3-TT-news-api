@@ -4,9 +4,10 @@ import db from '../../db/db.js'
 const conversationSchema = new mongoose.Schema({
   participants: [
     {
-      user_id: {
+      user: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
+        require: true,
       },
       visible: {
         type: Boolean,
@@ -24,6 +25,12 @@ const conversationSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Message',
       },
+    },
+  ],
+  messages: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Message',
     },
   ],
 })
