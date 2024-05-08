@@ -31,5 +31,39 @@ class MessageModel {
       }
     })
   }
+  async getNotificationList(userId, type) {
+    let notifications = await Message.find({
+      receiver: new ObjectId(userId),
+      type: type,
+    })
+      .populate({
+        path: 'sender',
+        select: 'user_id user_nickname user_avatar',
+      })
+      .populate('related_entity')
+      .sort('created_at')
+      .exec()
+    if (type === 'follow') {
+      notifications = notifications.map((item) => {
+        const userInfo = {
+          user_id: item.related_entity.user_id,
+          user_nickname: item.related_entity.user_nickname,
+          user_avatar: item.related_entity.user_avatar,
+        }
+        item._doc.related_entity = userInfo
+        return item
+      })
+    }
+
+    const unReadCount = await Message.countDocuments({
+      receiver: new ObjectId(userId),
+      type: type,
+      isRead: false,
+    })
+    return {
+      notifications,
+      unReadCount,
+    }
+  }
 }
 export default new MessageModel()

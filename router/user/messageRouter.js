@@ -5,6 +5,8 @@ const router = new Router({ prefix: '/message' })
 
 //获取对话消息列表
 router.get('/chat/list', MessageController.getChatList)
+//获取通知消息列表
+router.get('/notify/list', MessageController.getNotifyList) 
 
 // //获取消息列表
 // router.get('/list', MessageController.getMessageList)

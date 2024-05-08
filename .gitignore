@@ -24,6 +24,8 @@ public/video_images/*
 public/videos/*
 !public/videos/.gitkeep
 
+.env
+
 *.local
 
 # Editor directories and files
