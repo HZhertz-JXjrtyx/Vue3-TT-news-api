@@ -68,8 +68,26 @@ class MessageController {
       data,
     }
   }
+  // 发送对话消息
   async addChatMessage(ctx) {
-    const { userId, receiverId, conversationId, content, createdAt } = ctx.request.query
+    const { _id: userId } = ctx.state.user
+    const { receiverId, conversationId, content, createdAt } = ctx.request.body
+    console.log(userId, receiverId, conversationId, content, createdAt)
+    const result = await MessageModel.addConversationMessage(
+      userId,
+      receiverId,
+      conversationId,
+      content,
+      createdAt
+    )
+    if (result.newMessage._id && result.udpRes.modifiedCount === 1) {
+      ctx.body = {
+        type: 'success',
+        status: 200,
+        message: '发送对话消息成功',
+        data: result.populatedMessage,
+      }
+    }
   }
 }
 export default new MessageController()

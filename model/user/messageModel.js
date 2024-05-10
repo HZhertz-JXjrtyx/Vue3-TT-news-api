@@ -4,9 +4,6 @@ import Conversation from '../../schema/db/conversation.js'
 import Message from '../../schema/db/message.js'
 import User from '../../schema/db/users.js'
 
-function isValidObjectId(id) {
-  return mongoose.Types.ObjectId.isValid(id)
-}
 class MessageModel {
   async getNotificationList(userId, type) {
     let latestNotification = await Message.findOne({
@@ -143,6 +140,35 @@ class MessageModel {
     } catch (error) {
       console.error(error)
       throw error
+    }
+  }
+  async addConversationMessage(sender, receiver, conversation, content, created_at) {
+    const newMessage = await Message.create({
+      content: content,
+      sender: sender,
+      receiver: receiver,
+      created_at,
+      type: 'chat',
+      related_entity: conversation,
+      onModel: 'Conversation',
+    })
+
+    const udpRes = await Conversation.updateOne(
+      { _id: conversation, 'participants.user': sender },
+      {
+        $push: { messages: newMessage._id },
+        $set: { 'participants.$[].last_visible_message': newMessage._id },
+      }
+    )
+    const populatedMessage = await Message.findById(newMessage._id).populate({
+      path: 'sender',
+      select: 'user_id user_nickname user_avatar',
+    })
+    // console.log(newMessage, udpRes, populatedMessage)
+    return {
+      newMessage,
+      udpRes,
+      populatedMessage,
     }
   }
 }
