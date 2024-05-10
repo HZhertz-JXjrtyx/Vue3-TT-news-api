@@ -25,6 +25,10 @@ const messageSchema = new mongoose.Schema({
     enum: ['comment', 'like', 'follow', 'chat'],
     default: 'chat',
   },
+  related_content: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Comment',
+  },
   related_entity: {
     type: mongoose.Schema.Types.ObjectId,
     refPath: 'onModel',

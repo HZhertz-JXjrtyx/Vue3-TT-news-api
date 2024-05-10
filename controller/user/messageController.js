@@ -2,31 +2,28 @@ import MessageModel from '../../model/user/messageModel.js'
 class MessageController {
   // 获取用户通知列表
   async getNotifyList(ctx) {
-    const { userId } = ctx.request.query
+    const { _id: userId } = ctx.state.user
     console.log(userId)
     const [commentRes, likeRes, followRes] = await Promise.all([
       MessageModel.getNotificationList(userId, 'comment'),
       MessageModel.getNotificationList(userId, 'like'),
       MessageModel.getNotificationList(userId, 'follow'),
     ])
-    // const data = await MessageModel.getNotificationList(userId)
-    console.log(commentRes, likeRes, followRes)
-
     ctx.body = {
       type: 'success',
       status: 200,
       message: '获取用户通知列表成功',
       data: {
         comment: {
-          last_message: commentRes.notifications.at(-1),
+          last_message: commentRes.latestNotification,
           unReadCount: commentRes.unReadCount,
         },
         like: {
-          last_message: likeRes.notifications.at(-1),
+          last_message: likeRes.latestNotification,
           unReadCount: likeRes.unReadCount,
         },
         follow: {
-          last_message: followRes.notifications.at(-1),
+          last_message: followRes.latestNotification,
           unReadCount: followRes.unReadCount,
         },
       },
@@ -34,24 +31,23 @@ class MessageController {
   }
   // 获取通知消息内容
   async getNotifyDetail(ctx) {
-    const { userId, type } = ctx.request.query
-    console.log(userId)
-    const data = await MessageModel.getNotificationList(userId, type)
-    console.log(data)
-
+    const { _id: userId } = ctx.state.user
+    const { type, page, size } = ctx.request.query
+    console.log(userId, type, page, size)
+    const offset = (page - 1) * size
+    const data = await MessageModel.getNotificationDetail(userId, type, offset, parseInt(size))
     ctx.body = {
       type: 'success',
       status: 200,
-      message: `获取${type}通知列表成功`,
+      message: `获取${type}通知消息成功`,
       data,
     }
   }
   // 获取用户对话列表
   async getChatList(ctx) {
-    const { userId } = ctx.request.query
+    const { _id: userId } = ctx.state.user
     console.log(userId)
     const data = await MessageModel.getConversationList(userId)
-    console.log(data)
     ctx.body = {
       type: 'success',
       status: 200,
@@ -61,17 +57,19 @@ class MessageController {
   }
   // 获取对话消息内容
   async getChatDetail(ctx) {
-    const { userId, conversationId } = ctx.request.query
+    const { _id: userId } = ctx.state.user
+    const { conversationId } = ctx.request.query
     console.log(userId, conversationId)
     const data = await MessageModel.getConversationDetail(userId, conversationId)
-    console.log(data)
-
     ctx.body = {
       type: 'success',
       status: 200,
-      message: '获取对话消息内容',
+      message: '获取对话消息内容成功',
       data,
     }
+  }
+  async addChatMessage(ctx) {
+    const { userId, receiverId, conversationId, content, createdAt } = ctx.request.query
   }
 }
 export default new MessageController()

@@ -113,6 +113,7 @@ class UserController {
       const compareResult = bcrypt.compareSync(userInfo.password, rows[0].user_password)
       if (compareResult) {
         const payload = {
+          _id: rows[0]._id,
           id: rows[0].user_id,
           username: rows[0].user_name,
           time: new Date().getTime(),

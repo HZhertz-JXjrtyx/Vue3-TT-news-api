@@ -2,12 +2,45 @@ import mongoose from 'mongoose'
 const ObjectId = mongoose.Types.ObjectId
 import Conversation from '../../schema/db/conversation.js'
 import Message from '../../schema/db/message.js'
+import User from '../../schema/db/users.js'
 
 function isValidObjectId(id) {
   return mongoose.Types.ObjectId.isValid(id)
 }
 class MessageModel {
-	async getNotificationList(userId, type) {
+  async getNotificationList(userId, type) {
+    let latestNotification = await Message.findOne({
+      receiver: new mongoose.Types.ObjectId(userId),
+      type: type,
+    })
+      .populate({
+        path: 'sender',
+        select: 'user_id user_nickname user_avatar',
+      })
+      .populate('related_content')
+      .populate('related_entity')
+      .sort({ created_at: -1 })
+      .limit(1)
+    if (latestNotification && type === 'follow') {
+      const userInfo = {
+        user_id: latestNotification.related_entity.user_id,
+        user_nickname: latestNotification.related_entity.user_nickname,
+        user_avatar: latestNotification.related_entity.user_avatar,
+      }
+      latestNotification._doc.related_entity = userInfo
+    }
+
+    const unReadCount = await Message.countDocuments({
+      receiver: new ObjectId(userId),
+      type: type,
+      isRead: false,
+    })
+    return {
+      latestNotification,
+      unReadCount,
+    }
+  }
+  async getNotificationDetail(userId, type, offset = 0, size = 10) {
     let notifications = await Message.find({
       receiver: new ObjectId(userId),
       type: type,
@@ -16,8 +49,11 @@ class MessageModel {
         path: 'sender',
         select: 'user_id user_nickname user_avatar',
       })
+      .populate('related_content')
       .populate('related_entity')
       .sort('created_at')
+      .skip(offset)
+      .limit(size)
       .exec()
     if (type === 'follow') {
       notifications = notifications.map((item) => {
@@ -31,15 +67,7 @@ class MessageModel {
       })
     }
 
-    const unReadCount = await Message.countDocuments({
-      receiver: new ObjectId(userId),
-      type: type,
-      isRead: false,
-    })
-    return {
-      notifications,
-      unReadCount,
-    }
+    return notifications
   }
   async getConversationList(userId) {
     const conversations = await Conversation.find({
@@ -48,13 +76,12 @@ class MessageModel {
     })
       .populate({
         path: 'participants.user',
-        select: 'user_nickname user_avatar',
+        select: 'user_id user_nickname user_avatar',
       })
       .populate('participants.last_visible_message')
       .sort({ 'participants.last_visible_message.created_at': -1 })
 
     return conversations.map((conversation) => {
-      console.log(conversation)
       const otherSide = conversation.participants.find((p) => String(p.user._id) !== userId)
       const ourSide = conversation.participants.find((p) => String(p.user._id) === userId)
       return {
@@ -65,29 +92,40 @@ class MessageModel {
       }
     })
   }
-  
+
   async getConversationDetail(userId, conversationId) {
     try {
-      const conversation = await Conversation.findById(conversationId).populate({
-        path: 'messages',
-        model: Message,
-        options: { sort: { created_at: 1 } },
-      })
+      const conversation = await Conversation.findById(conversationId)
+        .populate({
+          path: 'participants.user',
+          select: 'user_id user_nickname user_avatar',
+        })
+        .populate({
+          path: 'messages',
+          model: Message,
+          options: { sort: { created_at: 1 } },
+          populate: {
+            path: 'sender',
+            model: User,
+            select: 'user_id user_nickname user_avatar',
+          },
+        })
 
       if (!conversation) {
         throw new Error('Conversation not found')
       }
 
-      const participant = conversation.participants.find((p) => p.user.toString() === userId)
+      const otherSide = conversation.participants.find((p) => String(p.user._id) !== userId)
+      const ourSide = conversation.participants.find((p) => String(p.user._id) === userId)
 
-      if (!participant) {
-        throw new Error('User not a participant in the conversation')
+      if (!ourSide) {
+        throw new Error('ourSide not in the conversation')
       }
 
       let messages
-      if (participant.last_invisible_message) {
+      if (ourSide.last_invisible_message) {
         const lastInvisibleMessageIndex = conversation.messages.findIndex(
-          (message) => message._id.toString() === participant.last_invisible_message.toString()
+          (message) => message._id.toString() === ourSide.last_invisible_message.toString()
         )
 
         messages =
@@ -98,7 +136,10 @@ class MessageModel {
         messages = conversation.messages
       }
 
-      return messages
+      return {
+        interlocutor: otherSide.user,
+        messages,
+      }
     } catch (error) {
       console.error(error)
       throw error

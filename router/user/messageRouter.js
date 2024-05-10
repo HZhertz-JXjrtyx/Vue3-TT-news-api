@@ -11,7 +11,8 @@ router.get('/notify/detail', MessageController.getNotifyDetail)
 router.get('/chat/list', MessageController.getChatList)
 //获取对话消息内容
 router.get('/chat/detail', MessageController.getChatDetail)
-
+// 发送对话消息
+router.post('/chat/send', MessageController.addChatMessage)
 // //获取消息列表
 // router.get('/list', MessageController.getMessageList)
 // //获取消息列表
