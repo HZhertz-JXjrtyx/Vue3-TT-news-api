@@ -13,9 +13,8 @@ router.get('/chat/list', MessageController.getChatList)
 router.get('/chat/detail', MessageController.getChatDetail)
 // 发送对话消息
 router.post('/chat/send', MessageController.addChatMessage)
-// //获取消息列表
-// router.get('/list', MessageController.getMessageList)
-// //获取消息列表
+// 清除未读
+router.patch('/clear/unread', MessageController.clearUnreadMessage)
 // router.post('/list', MessageController.updateMessageCount)
 // //删除消息列表
 

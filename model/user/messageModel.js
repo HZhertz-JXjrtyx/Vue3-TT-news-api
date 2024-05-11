@@ -1,5 +1,5 @@
 import mongoose from 'mongoose'
-const ObjectId = mongoose.Types.ObjectId
+// const ObjectId = mongoose.Types.ObjectId
 import Conversation from '../../schema/db/conversation.js'
 import Message from '../../schema/db/message.js'
 import User from '../../schema/db/users.js'
@@ -7,7 +7,7 @@ import User from '../../schema/db/users.js'
 class MessageModel {
   async getNotificationList(userId, type) {
     let latestNotification = await Message.findOne({
-      receiver: new mongoose.Types.ObjectId(userId),
+      receiver: userId,
       type: type,
     })
       .populate({
@@ -28,7 +28,7 @@ class MessageModel {
     }
 
     const unReadCount = await Message.countDocuments({
-      receiver: new ObjectId(userId),
+      receiver: userId,
       type: type,
       isRead: false,
     })
@@ -39,7 +39,7 @@ class MessageModel {
   }
   async getNotificationDetail(userId, type, offset = 0, size = 10) {
     let notifications = await Message.find({
-      receiver: new ObjectId(userId),
+      receiver: userId,
       type: type,
     })
       .populate({
@@ -68,7 +68,7 @@ class MessageModel {
   }
   async getConversationList(userId) {
     const conversations = await Conversation.find({
-      'participants.user': new ObjectId(userId),
+      'participants.user': userId,
       'participants.visible': true,
     })
       .populate({
@@ -169,6 +169,25 @@ class MessageModel {
       newMessage,
       udpRes,
       populatedMessage,
+    }
+  }
+
+  async clearUnreadNotify(userId, messageType) {
+    return await Message.updateMany({ receiver: userId, type: messageType }, { $set: { isRead: true } })
+  }
+
+  async clearUnreadChat(userId, conversationId) {
+    const updMessageRes = await Message.updateMany(
+      { receiver: userId, related_entity: conversationId },
+      { $set: { isRead: true } }
+    )
+    const updConversationRes = await Conversation.updateOne(
+      { _id: conversationId, 'participants.user': userId },
+      { $set: { 'participants.$.unread_count': 0 } }
+    )
+    return {
+      updMessageRes,
+      updConversationRes,
     }
   }
 }

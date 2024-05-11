@@ -89,5 +89,33 @@ class MessageController {
       }
     }
   }
+  // 清除未读
+  async clearUnreadMessage(ctx) {
+    const { _id: userId } = ctx.state.user
+    const { messageType, conversationId } = ctx.request.body
+    if (['comment', 'like', 'follow'].includes(messageType)) {
+      const result = await MessageModel.clearUnreadNotify(userId, messageType)
+      console.log(result)
+      if (result.acknowledged) {
+        ctx.body = {
+          type: 'success',
+          status: 200,
+          message: `清除未读${messageType}通知成功`,
+          clearCount: result.modifiedCount,
+        }
+      }
+    } else if (messageType === 'chat') {
+      const result = await MessageModel.clearUnreadChat(userId, conversationId)
+      console.log(result)
+      if (result.updMessageRes.acknowledged && result.updConversationRes.acknowledged) {
+        ctx.body = {
+          type: 'success',
+          status: 200,
+          message: '清除未读chat通知成功',
+          clearCount: result.updMessageRes.modifiedCount,
+        }
+      }
+    }
+  }
 }
 export default new MessageController()
