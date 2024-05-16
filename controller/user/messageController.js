@@ -68,6 +68,11 @@ class MessageController {
       data,
     }
   }
+  // 新增对话/查找对话
+  async addChat(ctx) {
+    const { _id: userId } = ctx.state.user
+    const { receiverId, conversationId, content, createdAt } = ctx.request.body
+  }
   // 发送对话消息
   async addChatMessage(ctx) {
     const { _id: userId } = ctx.state.user
@@ -80,13 +85,25 @@ class MessageController {
       content,
       createdAt
     )
-    if (result.newMessage._id && result.udpRes.modifiedCount === 1) {
+    if (result.newMessage._id) {
       ctx.body = {
         type: 'success',
         status: 200,
         message: '发送对话消息成功',
         data: result.populatedMessage,
       }
+    }
+  }
+  // 获取未读消息总数
+  async getUnreadTotalCount(ctx) {
+    const { _id: userId } = ctx.state.user
+    const result = await MessageModel.getUnreadTotal(userId)
+    console.log(result)
+    ctx.body = {
+      type: 'success',
+      status: 200,
+      message: `${result}条未读消息`,
+      unreadTotalCount: result,
     }
   }
   // 清除未读

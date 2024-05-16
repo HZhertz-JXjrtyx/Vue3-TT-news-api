@@ -5,6 +5,7 @@ import Message from '../../schema/db/message.js'
 import User from '../../schema/db/users.js'
 
 class MessageModel {
+  // 获取通知列表
   async getNotificationList(userId, type) {
     let latestNotification = await Message.findOne({
       receiver: userId,
@@ -37,6 +38,7 @@ class MessageModel {
       unReadCount,
     }
   }
+  // 获取通知列表消息
   async getNotificationDetail(userId, type, offset = 0, size = 10) {
     let notifications = await Message.find({
       receiver: userId,
@@ -66,6 +68,7 @@ class MessageModel {
 
     return notifications
   }
+  // 获取对话列表
   async getConversationList(userId) {
     const conversations = await Conversation.find({
       'participants.user': userId,
@@ -89,7 +92,7 @@ class MessageModel {
       }
     })
   }
-
+  // 获取对话列表消息
   async getConversationDetail(userId, conversationId) {
     try {
       const conversation = await Conversation.findById(conversationId)
@@ -142,6 +145,7 @@ class MessageModel {
       throw error
     }
   }
+  // 新增对话消息
   async addConversationMessage(sender, receiver, conversation, content, created_at) {
     const newMessage = await Message.create({
       content: content,
@@ -153,29 +157,65 @@ class MessageModel {
       onModel: 'Conversation',
     })
 
-    const udpRes = await Conversation.updateOne(
-      { _id: conversation, 'participants.user': sender },
+    // const udpRes = await Conversation.updateOne(
+    //   { _id: conversation, 'participants.user': sender },
+    //   {
+    //     $push: { messages: newMessage._id },
+    //     $inc: { 'participants.$.unread_count': 1 },
+    //     $set: { 'participants.$[].last_visible_message': newMessage._id },
+    //   }
+    // )
+    // const udpRes = await Conversation.aggregate([
+    //   { $match: { _id: conversation } },
+    //   { $unwind: { path: '$participants', includeArrayIndex: 'arrayIndex' } },
+    //   {
+    //     $addFields: {
+    //       'participants.unread_count': {
+    //         $cond: [
+    //           { $eq: ['$participants.user', sender] },
+    //           { $add: ['$participants.unread_count', 1] },
+    //           '$participants.unread_count',
+    //         ],
+    //       },
+    //     },
+    //   },
+    //   { $addFields: { 'participants.last_visible_message': newMessage._id } },
+    //   {
+    //     $group: { _id: '$_id', participants: { $push: '$participants' }, messages: { $first: '$messages' } },
+    //   },
+    //   { $addFields: { messages: { $concatArrays: ['$messages', [newMessage._id]] } } },
+    // ])
+    const udpRes1 = await Conversation.updateOne(
+      { _id: conversation, 'participants.user': receiver },
+      {
+        $inc: { 'participants.$.unread_count': 1 },
+      }
+    )
+    const udpRes2 = await Conversation.updateMany(
+      { _id: conversation },
       {
         $push: { messages: newMessage._id },
         $set: { 'participants.$[].last_visible_message': newMessage._id },
       }
     )
+    // console.log(udpRes1, udpRes2)
     const populatedMessage = await Message.findById(newMessage._id).populate({
       path: 'sender',
       select: 'user_id user_nickname user_avatar',
     })
     // console.log(newMessage, udpRes, populatedMessage)
-    return {
-      newMessage,
-      udpRes,
-      populatedMessage,
+    if (udpRes1.modifiedCount === 1 && udpRes2.modifiedCount === 1) {
+      return {
+        newMessage,
+        populatedMessage,
+      }
     }
   }
-
+  // 清除通知未读
   async clearUnreadNotify(userId, messageType) {
     return await Message.updateMany({ receiver: userId, type: messageType }, { $set: { isRead: true } })
   }
-
+  // 清除对话未读
   async clearUnreadChat(userId, conversationId) {
     const updMessageRes = await Message.updateMany(
       { receiver: userId, related_entity: conversationId },
@@ -189,6 +229,13 @@ class MessageModel {
       updMessageRes,
       updConversationRes,
     }
+  }
+  // 获取未读消息总数
+  async getUnreadTotal(userId) {
+    return await Message.countDocuments({
+      receiver: userId,
+      isRead: false,
+    })
   }
 }
 export default new MessageModel()

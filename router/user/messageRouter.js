@@ -11,8 +11,12 @@ router.get('/notify/detail', MessageController.getNotifyDetail)
 router.get('/chat/list', MessageController.getChatList)
 //获取对话消息内容
 router.get('/chat/detail', MessageController.getChatDetail)
+// 新增对话
+router.post('/add/chat', MessageController.addChat)
 // 发送对话消息
 router.post('/chat/send', MessageController.addChatMessage)
+// 获取未读消息总数
+router.get('/unread/total', MessageController.getUnreadTotalCount)
 // 清除未读
 router.patch('/clear/unread', MessageController.clearUnreadMessage)
 // router.post('/list', MessageController.updateMessageCount)
