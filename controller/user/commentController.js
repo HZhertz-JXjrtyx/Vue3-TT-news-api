@@ -4,73 +4,85 @@ import UserModel from '../../model/user/userModel.js'
 import commentModel from '../../model/user/commentModel.js'
 
 class CommentController {
-  //获取评论或评论回复
-  async getComments(ctx) {
-    try {
-      const myId = ctx.state.user.id
-      const { type, id, page, size } = ctx.request.query
-      // console.log(myId, type, id, page, pageSize)
-      const offset = (page - 1) * size
-      const docs = await CommentModel.getComments(parseInt(type), id, myId, offset, parseInt(size))
-      if (docs.length === 0) {
-        ctx.status = 200
-        ctx.body = {
-          type: 'success',
-          status: 204,
-          message: '没有更多数据！',
-          data: [],
-        }
-      } else {
-        ctx.status = 200
-        ctx.body = {
-          type: 'success',
-          status: 200,
-          message: '获取评论列表成功！',
-          data: docs,
-        }
-      }
-    } catch (error) {
-      ctx.status = 500
+  // 获取评论列表
+  async getCommentsList(ctx) {
+    // try {
+    const myId = ctx.state.user.id
+    const { commentType, relatedId, page, size } = ctx.request.query
+    console.log('>>>', myId, commentType, relatedId, page, size)
+    const offset = (page - 1) * size
+    const docs = await CommentModel.getComments(
+      parseInt(commentType),
+      relatedId,
+      myId,
+      offset,
+      parseInt(size)
+    )
+    console.log(docs)
+    if (docs.length === 0) {
+      ctx.status = 200
       ctx.body = {
-        type: 'error',
-        status: 500,
-        message: error,
+        type: 'success',
+        status: 204,
+        message: '没有更多数据！',
+        data: [],
+      }
+    } else {
+      ctx.status = 200
+      ctx.body = {
+        type: 'success',
+        status: 200,
+        message: '获取评论列表成功！',
+        data: docs,
       }
     }
+    // } catch (error) {
+    //   ctx.status = 500
+    //   ctx.body = {
+    //     type: 'error',
+    //     status: 500,
+    //     message: error,
+    //   }
+    // }
   }
-  //对文章或者评论进行评论
+  // 新增评论
   async addComment(ctx) {
     const myId = ctx.state.user.id
-    const { type, id, content, replyId, pubTime } = ctx.request.body
-    console.log(myId, type, id, content, replyId, pubTime)
-    const comment_id = uuidv4()
-    const { _doc: addRes } = await CommentModel.addComment(
-      comment_id,
-      myId,
-      type,
-      id,
-      content,
-      pubTime,
-      parseInt(replyId)
-    )
-    const updUserRes = await CommentModel.updUserComment(myId, comment_id, 'add')
-    const updCountRes = await CommentModel.updSourceCount(type, id, 1)
-    console.log(updUserRes, updCountRes)
-    if (addRes.comment_id && updUserRes.modifiedCount === 1 && updCountRes.modifiedCount === 1) {
-      addRes.user_info = await CommentModel.findUser(myId)
-      addRes.islike = false
-      if (addRes.type === 3 && addRes.reply_user !== 0) {
-        const docs = await CommentModel.findUser(addRes.reply_user)
+    const my_id = ctx.state.user._id
+    const { commentType, replyUser, content, createdTime, parentComment, relatedId } = ctx.request.body
+    console.log(my_id, commentType, replyUser, content, createdTime, parentComment, relatedId)
 
-        addRes.reply_user_nickname = docs?.user_nickname || '账户已注销'
-      } else {
-        addRes.replies = []
+    const addRes = await CommentModel.addComment(
+      my_id,
+      commentType,
+      replyUser,
+      content,
+      createdTime,
+      parentComment,
+      relatedId
+    )
+    console.log(addRes._id)
+    const comment_id = addRes._id.toString()
+    console.log(comment_id)
+
+    const { _doc: commentInfo } = await CommentModel.findComment(comment_id)
+    // console.log(sender, receiverInfo)
+    const updUserRes = await CommentModel.updUserComment(myId, comment_id, 'add')
+    const updCountRes = await CommentModel.updSourceCount(commentType, relatedId, 1)
+    console.log(updUserRes, updCountRes)
+
+    if (commentInfo._id && updUserRes.modifiedCount === 1 && updCountRes.modifiedCount === 1) {
+      // addRes.user_info = await CommentModel.findUser(myId)
+      commentInfo.islike = false
+      if ([1, 2].includes(addRes.comment_type)) {
+        commentInfo.replies = []
       }
+      console.log(commentInfo)
       ctx.body = {
         type: 'success',
         status: 200,
         message: '评论成功！',
-        data: addRes,
+        data: commentInfo,
       }
     } else {
       ctx.body = { type: 'error', message: '评论失败！' }
@@ -124,11 +136,11 @@ class CommentController {
   // 删除评论
   async deleteComment(ctx) {
     const myId = ctx.state.user.id
-    const { commentId, type, sourceId } = ctx.request.body
-    console.log(commentId, type, sourceId)
+    const { commentId, commentType, relatedId } = ctx.request.body
+    console.log(commentId, commentType, relatedId)
     const delRes = await CommentModel.deleteComment(commentId)
     const updUserRes = await CommentModel.updUserComment(myId, commentId, 'delete')
-    const updCountRes = await CommentModel.updSourceCount(type, sourceId, -1)
+    const updCountRes = await CommentModel.updSourceCount(commentType, relatedId, -1)
     console.log(delRes, updUserRes, updCountRes)
     if (delRes.deletedCount === 1 && updUserRes.matchedCount === 1 && updCountRes.matchedCount === 1) {
       ctx.body = {
@@ -146,21 +158,24 @@ class CommentController {
   }
   // 获取评论详情
   async getCommentDetail(ctx) {
-    const myId = ctx.state.user.id
-    const { commentId } = ctx.request.query
-    console.log(commentId)
-    const [commentData] = await commentModel.getCommentDetail(myId, commentId)
-    if (commentData) {
+    try {
+      const myId = ctx.state.user.id
+      const { commentId } = ctx.request.query
+      console.log('commentId', commentId)
+      const { _doc: commentData } = await commentModel.findComment(commentId)
+      console.log(commentData)
+      const islike = await commentModel.isLike(myId, commentId)
+      commentData.isLike = islike
       ctx.body = {
         type: 'success',
         status: 200,
         message: '获取评论详情成功！',
         data: commentData,
       }
-    } else {
+    } catch (error) {
       ctx.body = {
         type: 'error',
-        message: '获取评论详情失败！',
+        message: error,
       }
     }
   }

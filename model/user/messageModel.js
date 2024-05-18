@@ -68,6 +68,11 @@ class MessageModel {
 
     return notifications
   }
+  // 新增通知消息
+  async addNotifyMessage(sender, receiver, created_at, type, related_content, related_entity, onModel) {
+
+		
+	}
   // 获取对话列表
   async getConversationList(userId) {
     const conversations = await Conversation.find({

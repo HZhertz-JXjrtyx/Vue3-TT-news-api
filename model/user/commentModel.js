@@ -10,95 +10,92 @@ class CommentModel {
   async findUser(my_id) {
     return await User.findOne({ user_id: my_id }, 'user_avatar user_id user_name user_nickname')
   }
+  async findComment(_id) {
+    return await Comment.findById(_id)
+      .populate({
+        path: 'user_info',
+        select: 'user_id user_nickname user_avatar',
+      })
+      .populate({
+        path: 'reply_user',
+        select: 'user_id user_nickname user_avatar',
+      })
+  }
   // 获取评论列表
-  async getComments(type, id, my_id, offset, size) {
+  async getComments(comment_type, related_id, user_id, offset, size) {
     let likeComment = []
-    if (my_id !== undefined) {
-      const user = await User.findOne({ user_id: my_id })
+    if (user_id !== undefined) {
+      const user = await User.findOne({ user_id })
       if (user) {
-        // console.log(user)
         likeComment = user.like.comment
       }
     }
-
-    const pipelineArr = [
+    const populateArr = [
       {
         $lookup: {
           from: 'users',
-          let: { user_id: '$user_id' },
+          let: { user_info: '$user_info' },
           pipeline: [
-            { $match: { $expr: { $eq: ['$user_id', '$$user_id'] } } },
-            { $project: { user_id: 1, user_name: 1, user_nickname: 1, user_avatar: 1 } },
+            { $match: { $expr: { $eq: ['$_id', '$$user_info'] } } },
+            { $project: { user_id: 1, user_nickname: 1, user_avatar: 1 } },
           ],
           as: 'user_info',
         },
       },
-      { $unwind: '$user_info' },
+      {
+        $lookup: {
+          from: 'users',
+          let: { reply_user: '$reply_user' },
+          pipeline: [
+            { $match: { $expr: { $eq: ['$_id', '$$reply_user'] } } },
+            { $project: { user_id: 1, user_nickname: 1, user_avatar: 1 } },
+          ],
+          as: 'reply_user',
+        },
+      },
       {
         $addFields: {
-          is_like: { $in: ['$comment_id', likeComment] },
+          user_info: { $arrayElemAt: ['$user_info', 0] },
+          reply_user: { $arrayElemAt: ['$reply_user', 0] },
         },
       },
     ]
-    const pipeline = [{ $match: { type: type, source_id: id } }, ...pipelineArr]
-    if (type === 3) {
-      pipeline.push(
-        {
-          $lookup: {
-            from: 'users',
-            let: { reply_user: '$reply_user' },
-            pipeline: [
-              { $match: { $expr: { $eq: ['$user_id', '$$reply_user'] } } },
-              { $project: { user_nickname: 1 } },
-            ],
-            as: 'reply_user_info',
-          },
+
+    const pipeline = [
+      { $skip: offset },
+      { $limit: size },
+      ...populateArr,
+      {
+        $addFields: {
+          is_like: { $in: [{ $toString: '$_id' }, likeComment] },
         },
-        { $unwind: { path: '$reply_user_info', preserveNullAndEmptyArrays: true } },
-        {
-          $addFields: {
-            reply_user_nickname: { $ifNull: ['$reply_user_info.user_nickname', '账户已注销'] },
-          },
-        },
-        { $project: { reply_user_info: 0 } }
-      )
-    }
-    if (type !== 3) {
+      },
+    ]
+
+    if ([1, 2].includes(comment_type)) {
+      pipeline.unshift({ $match: { comment_type, related_id } })
       pipeline.push({
         $lookup: {
           from: 'comments',
-          let: { comment_id: '$comment_id' },
+          let: { comment_id: { $toString: '$_id' } },
           pipeline: [
-            { $match: { $expr: { $and: [{ $eq: ['$type', 3] }, { $eq: ['$source_id', '$$comment_id'] }] } } },
-            { $sort: { publish_time: -1 } },
+            {
+              $match: {
+                $expr: {
+                  $and: [{ $in: ['$comment_type', [3, 4]] }, { $eq: ['$related_id', '$$comment_id'] }],
+                },
+              },
+            },
+            { $sort: { created_time: -1 } },
             { $limit: 3 },
-            {
-              $lookup: {
-                from: 'users',
-                let: { reply_user: '$reply_user' },
-                pipeline: [
-                  { $match: { $expr: { $eq: ['$user_id', '$$reply_user'] } } },
-                  { $project: { user_nickname: 1 } },
-                ],
-                as: 'reply_user_info',
-              },
-            },
-            { $unwind: { path: '$reply_user_info', preserveNullAndEmptyArrays: true } },
-            {
-              $addFields: {
-                reply_user_nickname: { $ifNull: ['$reply_user_info.user_nickname', '账户已注销'] },
-              },
-            },
-            { $project: { reply_user_info: 0 } },
-            ...pipelineArr,
+            ...populateArr,
           ],
           as: 'replies',
         },
       })
+    } else {
+      pipeline.unshift({ $match: { comment_type: { $in: [3, 4] }, related_id } })
     }
-
-    pipeline.push({ $skip: offset })
-    pipeline.push({ $limit: size })
 
     return await Comment.aggregate(pipeline)
   }
@@ -135,21 +132,21 @@ class CommentModel {
     return await Comment.aggregate(pipeline)
   }
   // 新增评论
-  async addComment(comment_id, user_id, type, source_id, content, publish_time, reply_user) {
+  async addComment(user_info, comment_type, reply_user, content, created_time, parent_comment, related_id) {
     const newComment = {
-      comment_id,
-      user_id,
-      content,
-      publish_time,
-      type,
-      source_id,
+      comment_type,
+      user_info,
       reply_user,
+      content,
+      created_time,
+      parent_comment,
+      related_id,
     }
     return await Comment.create(newComment)
   }
   // 删除评论
   async deleteComment(comment_id) {
-    return await Comment.deleteOne({ comment_id })
+    return await Comment.deleteOne({ _id: comment_id })
   }
 
   // 更新用户 comment array
@@ -165,18 +162,18 @@ class CommentModel {
     }
   }
   //  更新源 comment_count
-  async updSourceCount(type, source_id, comment_count) {
-    if (type === 1) {
-      return await Article.updateOne({ article_id: source_id }, { $inc: { comment_count } })
-    } else if (type === 2) {
-      return await Video.updateOne({ video_id: source_id }, { $inc: { comment_count } })
-    } else if (type === 3) {
-      await Comment.updateOne({ comment_id: source_id }, { $inc: { reply_count: comment_count } })
-      const comment = await Comment.findOne({ comment_id: source_id })
-      if (comment.type === 1) {
-        return await Article.updateOne({ article_id: comment.source_id }, { $inc: { comment_count } })
-      } else if (comment.type === 2) {
-        return await Video.updateOne({ video_id: comment.source_id }, { $inc: { comment_count } })
+  async updSourceCount(comment_type, related_id, comment_count) {
+    if (comment_type === 1) {
+      return await Article.updateOne({ article_id: related_id }, { $inc: { comment_count } })
+    } else if (comment_type === 2) {
+      return await Video.updateOne({ video_id: related_id }, { $inc: { comment_count } })
+    } else if (comment_type === 3 || comment_type === 4) {
+      await Comment.updateOne({ _id: related_id }, { $inc: { reply_count: comment_count } })
+      const comment = await Comment.findById(related_id)
+      if (comment.comment_type === 1) {
+        return await Article.updateOne({ article_id: comment.related_id }, { $inc: { comment_count } })
+      } else if (comment.comment_type === 2) {
+        return await Video.updateOne({ video_id: comment.related_id }, { $inc: { comment_count } })
       }
     }
   }
@@ -200,7 +197,7 @@ class CommentModel {
   }
   // 更新like count
   async updLikeCount(comment_id, like_count) {
-    return await Comment.updateOne({ comment_id }, { $inc: { like_count } })
+    return await Comment.updateOne({ _id: comment_id }, { $inc: { like_count } })
   }
 }
 export default new CommentModel()

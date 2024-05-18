@@ -43,6 +43,7 @@ class MessageController {
       data,
     }
   }
+  
   // 获取用户对话列表
   async getChatList(ctx) {
     const { _id: userId } = ctx.state.user
@@ -73,7 +74,7 @@ class MessageController {
     const { _id: userId } = ctx.state.user
     const { receiverId, conversationId, content, createdAt } = ctx.request.body
   }
-  // 发送对话消息
+  // 新增对话消息
   async addChatMessage(ctx) {
     const { _id: userId } = ctx.state.user
     const { receiverId, conversationId, content, createdAt } = ctx.request.body
