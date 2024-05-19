@@ -31,8 +31,48 @@ class NewsModel {
     // console.log(newResult.length)
     return newResult
   }
+  // async getHot() {
+  //   return await HotList.find()
+  // }
   async getHot() {
-    return await HotList.find()
+    return await HotList.aggregate([
+      {
+        $lookup: {
+          from: 'articles',
+          let: { articleId: '$ArticleId' },
+          pipeline: [
+            { $match: { $expr: { $eq: ['$article_id', '$$articleId'] } } },
+            { $project: { _id: 1 } },
+          ],
+          as: 'article',
+        },
+      },
+      {
+        $lookup: {
+          from: 'videos',
+          let: { videoId: '$VideoId' },
+          pipeline: [{ $match: { $expr: { $eq: ['$video_id', '$$videoId'] } } }, { $project: { _id: 1 } }],
+          as: 'video',
+        },
+      },
+      {
+        $addFields: {
+          related_id: {
+            $cond: {
+              if: { $eq: ['$Type', 'article'] },
+              then: { $arrayElemAt: ['$article._id', 0] },
+              else: { $arrayElemAt: ['$video._id', 0] },
+            },
+          },
+        },
+      },
+      {
+        $project: {
+          article: 0,
+          video: 0,
+        },
+      },
+    ])
   }
 }
 export default new NewsModel()

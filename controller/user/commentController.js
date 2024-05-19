@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from 'uuid'
 import CommentModel from '../../model/user/commentModel.js'
 import UserModel from '../../model/user/userModel.js'
-import commentModel from '../../model/user/commentModel.js'
+import MessageModel from '../../model/user/messageModel.js'
 
 class CommentController {
   // 获取评论列表
@@ -62,10 +62,20 @@ class CommentController {
       relatedId
     )
     console.log(addRes._id)
+
     const comment_id = addRes._id.toString()
     console.log(comment_id)
 
     const { _doc: commentInfo } = await CommentModel.findComment(comment_id)
+    // await MessageModel.addNotifyMessage(
+    //   commentInfo.user_info._id,
+    //   commentInfo.reply_user._id,
+    //   commentInfo.created_time,
+    //   'comment',
+    //   commentInfo._id,
+    //   related_entity,
+    //   onModel
+    // )
     // console.log(sender, receiverInfo)
     const updUserRes = await CommentModel.updUserComment(myId, comment_id, 'add')
     const updCountRes = await CommentModel.updSourceCount(commentType, relatedId, 1)
@@ -162,10 +172,10 @@ class CommentController {
       const myId = ctx.state.user.id
       const { commentId } = ctx.request.query
       console.log('commentId', commentId)
-      const { _doc: commentData } = await commentModel.findComment(commentId)
+      const { _doc: commentData } = await CommentModel.findComment(commentId)
       console.log(commentData)
-      const islike = await commentModel.isLike(myId, commentId)
-      commentData.isLike = islike
+      const islike = await CommentModel.isLike(myId, commentId)
+      commentData.is_like = islike
       ctx.body = {
         type: 'success',
         status: 200,

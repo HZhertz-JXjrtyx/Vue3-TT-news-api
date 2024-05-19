@@ -4,7 +4,7 @@ import User from '../../schema/db/users.js'
 class ArticleModel {
   // 获取article信息
   async getArticle(article_id) {
-    return await Article.findOne({ article_id })
+    return await Article.findById(article_id)
   }
   // 发布article
   async addArticle(user_id, channel_id, title, content, cover_list, image_list, ui_style, publish_time) {

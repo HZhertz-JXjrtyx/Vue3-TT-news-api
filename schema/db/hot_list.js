@@ -9,7 +9,11 @@ const hotListSchema = new mongoose.Schema({
   HotValue: String,
   ImageUrl: String,
   LabelDesc: String,
-  Type: String,
+  Type: {
+    type: String,
+    enum: ['article', 'video'],
+  },
+  ArticleId: String,
   VideoId: String,
   AuthorInfo: {
     user_id: Number,

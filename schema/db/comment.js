@@ -2,7 +2,7 @@ import mongoose from 'mongoose'
 import db from '../../db/db.js'
 
 const commentSchema = new mongoose.Schema({
-	// 1:文章评论 2:视频评论 3:评论回复 4:回复回复
+  // 1:文章评论 2:视频评论 3:评论回复 4:回复回复
   comment_type: {
     type: Number,
     require: true,
@@ -28,10 +28,17 @@ const commentSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Comment',
   },
-  related_id: {
-    type: String,
-    require: true,
-  },
+  related_id: String,
+  // related_entity: {
+  //   type: mongoose.Schema.Types.ObjectId,
+  //   refPath: 'onModel',
+  //   required: true,
+  // },
+  // onModel: {
+  //   type: String,
+  //   enum: ['Article', 'Video', 'Comment'],
+  //   required: true,
+  // },
   status: {
     type: Number,
     default: 0,

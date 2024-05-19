@@ -64,6 +64,7 @@ class CommentModel {
     const pipeline = [
       { $skip: offset },
       { $limit: size },
+      { $sort: { created_time: -1 } },
       ...populateArr,
       {
         $addFields: {
@@ -164,16 +165,16 @@ class CommentModel {
   //  更新源 comment_count
   async updSourceCount(comment_type, related_id, comment_count) {
     if (comment_type === 1) {
-      return await Article.updateOne({ article_id: related_id }, { $inc: { comment_count } })
+      return await Article.updateOne({ _id: related_id }, { $inc: { comment_count } })
     } else if (comment_type === 2) {
-      return await Video.updateOne({ video_id: related_id }, { $inc: { comment_count } })
+      return await Video.updateOne({ _id: related_id }, { $inc: { comment_count } })
     } else if (comment_type === 3 || comment_type === 4) {
       await Comment.updateOne({ _id: related_id }, { $inc: { reply_count: comment_count } })
       const comment = await Comment.findById(related_id)
       if (comment.comment_type === 1) {
-        return await Article.updateOne({ article_id: comment.related_id }, { $inc: { comment_count } })
+        return await Article.updateOne({ _id: comment.related_id }, { $inc: { comment_count } })
       } else if (comment.comment_type === 2) {
-        return await Video.updateOne({ video_id: comment.related_id }, { $inc: { comment_count } })
+        return await Video.updateOne({ _id: comment.related_id }, { $inc: { comment_count } })
       }
     }
   }

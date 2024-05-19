@@ -198,12 +198,12 @@ class UserModel {
   async getFavorite(user_id, type, offset, size) {
     const user = await User.findOne({ user_id })
     if (type === 'article') {
-      const articles = await Article.find({ article_id: { $in: user.collect.article } })
+      const articles = await Article.find({ _id: { $in: user.collect.article } })
         .skip(offset)
         .limit(size)
       return articles
     } else if (type === 'video') {
-      const videos = await Video.find({ video_id: { $in: user.collect.video } })
+      const videos = await Video.find({ _id: { $in: user.collect.video } })
         .skip(offset)
         .limit(size)
       return videos
@@ -220,12 +220,12 @@ class UserModel {
   async getBrowse(user_id, type, offset, size) {
     const user = await User.findOne({ user_id })
     if (type === 'article') {
-      const articles = await Article.find({ article_id: { $in: user.browse.article } })
+      const articles = await Article.find({ _id: { $in: user.browse.article } })
         .skip(offset)
         .limit(size)
       return articles
     } else if (type === 'video') {
-      const videos = await Video.find({ video_id: { $in: user.browse.video } })
+      const videos = await Video.find({ _id: { $in: user.browse.video } })
         .skip(offset)
         .limit(size)
       return videos
@@ -235,7 +235,7 @@ class UserModel {
   async getBind(user_id) {
     return await User.findOne({ user_id }, 'user_email user_phone')
   }
-	// 更新work_count
+  // 更新work_count
   async updateWorkcount(user_id) {
     return User.updateOne({ user_id }, { $inc: { works_count: 1 } })
   }

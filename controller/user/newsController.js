@@ -41,7 +41,6 @@ class NewsController {
     }
   }
   // 获取热点列表
-
   async getHotList(ctx) {
     try {
       const hotList = await NewsModel.getHot()

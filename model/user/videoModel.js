@@ -3,7 +3,7 @@ import Video from '../../schema/db/video.js'
 class VideoModel {
   // 获取video信息
   async getVideo(video_id) {
-    return await Video.findOne({ video_id: video_id })
+    return await Video.findById(video_id)
   }
   // 发布article
   async addVideo(
