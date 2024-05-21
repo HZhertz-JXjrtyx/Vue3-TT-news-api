@@ -1,5 +1,6 @@
 import VideoModel from '../../model/user/videoModel.js'
 import UserModel from '../../model/user/userModel.js'
+import MessageModel from '../../model/user/messageModel.js'
 import renameFileBasedOnContent from '../../utils/renameFile.js'
 
 class VideoController {
@@ -87,6 +88,7 @@ class VideoController {
   // 对 video 点赞、取消点赞
   async likeVideo(ctx) {
     const myId = ctx.state.user.id
+    const my_id = ctx.state.user._id
     const { videoId, type } = ctx.request.body
     const isLike = await UserModel.isLike(myId, videoId, 'video')
     if (type) {
@@ -97,6 +99,25 @@ class VideoController {
         if (result.modifiedCount !== 1) {
           ctx.body = { type: 'error', message: '对视频点赞失败！' }
         } else {
+          const videoInfo = await VideoModel.getVideo(videoId)
+          const authorInfo = await UserModel.getInfo(videoInfo.user_id)
+
+          if (my_id !== String(authorInfo._id)) {
+            const addNotifyRes = await MessageModel.addNotifyMessage(
+              '赞了你的视频',
+              my_id,
+              authorInfo._id,
+              Date.now(),
+              'like',
+              undefined,
+              videoInfo._id,
+              'Video',
+							videoInfo._id,
+              'Video'
+            )
+            console.log(addNotifyRes)
+          }
+
           ctx.body = {
             type: 'success',
             status: 200,

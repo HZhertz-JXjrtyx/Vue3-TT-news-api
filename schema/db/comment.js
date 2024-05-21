@@ -28,17 +28,24 @@ const commentSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Comment',
   },
-  related_id: String,
-  // related_entity: {
-  //   type: mongoose.Schema.Types.ObjectId,
-  //   refPath: 'onModel',
-  //   required: true,
-  // },
-  // onModel: {
-  //   type: String,
-  //   enum: ['Article', 'Video', 'Comment'],
-  //   required: true,
-  // },
+  related_entity: {
+    type: mongoose.Schema.Types.ObjectId,
+    refPath: 'entity_type',
+    required: true,
+  },
+  entity_type: {
+    type: String,
+    enum: ['Article', 'Video', 'Comment'],
+    required: true,
+  },
+  related_work: {
+    type: mongoose.Schema.Types.ObjectId,
+    refPath: 'work_type',
+  },
+  work_type: {
+    type: String,
+    enum: ['Article', 'Video'],
+  },
   status: {
     type: Number,
     default: 0,

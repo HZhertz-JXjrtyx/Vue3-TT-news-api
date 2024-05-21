@@ -1,5 +1,6 @@
 import ArticleModel from '../../model/user/articleModel.js'
 import UserModel from '../../model/user/userModel.js'
+import MessageModel from '../../model/user/messageModel.js'
 import renameFileBasedOnContent from '../../utils/renameFile.js'
 
 class ArticleController {
@@ -90,6 +91,7 @@ class ArticleController {
   // 对文章点赞、取消点赞
   async likeArticle(ctx) {
     const myId = ctx.state.user.id
+    const my_id = ctx.state.user._id
     const { articleId, type } = ctx.request.body
     const isLike = await UserModel.isLike(myId, articleId, 'article')
     if (type) {
@@ -100,6 +102,24 @@ class ArticleController {
         if (result.modifiedCount !== 1) {
           ctx.body = { type: 'error', message: '对文章点赞失败！' }
         } else {
+          const articleInfo = await ArticleModel.getArticle(articleId)
+          const authorInfo = await UserModel.getInfo(articleInfo.user_id)
+
+          if (my_id !== String(authorInfo._id)) {
+            const addNotifyRes = await MessageModel.addNotifyMessage(
+              '赞了你的文章',
+              my_id,
+              authorInfo._id,
+              Date.now(),
+              'like',
+              undefined,
+              articleInfo._id,
+              'Article',
+							articleInfo._id,
+              'Article'
+            )
+            console.log(addNotifyRes)
+          }
           ctx.body = {
             type: 'success',
             status: 200,

@@ -1,4 +1,3 @@
-import { v4 as uuidv4 } from 'uuid'
 import CommentModel from '../../model/user/commentModel.js'
 import UserModel from '../../model/user/userModel.js'
 import MessageModel from '../../model/user/messageModel.js'
@@ -8,12 +7,12 @@ class CommentController {
   async getCommentsList(ctx) {
     // try {
     const myId = ctx.state.user.id
-    const { commentType, relatedId, page, size } = ctx.request.query
-    console.log('>>>', myId, commentType, relatedId, page, size)
+    const { commentType, relatedEntity, page, size } = ctx.request.query
+    console.log(myId, commentType, relatedEntity, page, size)
     const offset = (page - 1) * size
     const docs = await CommentModel.getComments(
       parseInt(commentType),
-      relatedId,
+      relatedEntity,
       myId,
       offset,
       parseInt(size)
@@ -49,9 +48,33 @@ class CommentController {
   async addComment(ctx) {
     const myId = ctx.state.user.id
     const my_id = ctx.state.user._id
-    const { commentType, replyUser, content, createdTime, parentComment, relatedId } = ctx.request.body
-    console.log(my_id, commentType, replyUser, content, createdTime, parentComment, relatedId)
-
+    const {
+      commentType,
+      replyUser,
+      content,
+      createdTime,
+      parentComment,
+      relatedEntity,
+      relatedWork,
+      workType,
+    } = ctx.request.body
+    console.log(
+      my_id,
+      commentType,
+      replyUser,
+      content,
+      createdTime,
+      parentComment,
+      relatedEntity,
+      relatedWork,
+      workType
+    )
+    const entityTypeEnum = {
+      1: 'Article',
+      2: 'Video',
+      3: 'Comment',
+      4: 'Comment',
+    }
     const addRes = await CommentModel.addComment(
       my_id,
       commentType,
@@ -59,30 +82,45 @@ class CommentController {
       content,
       createdTime,
       parentComment,
-      relatedId
+      relatedEntity,
+      entityTypeEnum[commentType],
+      relatedWork,
+      workType
     )
     console.log(addRes._id)
 
     const comment_id = addRes._id.toString()
     console.log(comment_id)
 
-    const { _doc: commentInfo } = await CommentModel.findComment(comment_id)
-    // await MessageModel.addNotifyMessage(
-    //   commentInfo.user_info._id,
-    //   commentInfo.reply_user._id,
-    //   commentInfo.created_time,
-    //   'comment',
-    //   commentInfo._id,
-    //   related_entity,
-    //   onModel
-    // )
-    // console.log(sender, receiverInfo)
+    const { _doc: commentInfo } = await CommentModel.getComment(comment_id)
+
+    if (commentInfo.user_info.user_id !== commentInfo.reply_user.user_id) {
+      const commentNotifyEnum = {
+        1: '评论了你的文章',
+        2: '评论了你的视频',
+        3: '回复了你的评论',
+        4: '回复了你的评论',
+      }
+      const addNotifyRes = await MessageModel.addNotifyMessage(
+        commentNotifyEnum[commentType],
+        commentInfo.user_info._id,
+        commentInfo.reply_user._id,
+        commentInfo.created_time,
+        'comment',
+        commentInfo._id,
+        commentInfo.related_entity,
+        commentInfo.entity_type,
+        commentInfo.related_work,
+        commentInfo.work_type
+      )
+      console.log(addNotifyRes)
+    }
+
     const updUserRes = await CommentModel.updUserComment(myId, comment_id, 'add')
-    const updCountRes = await CommentModel.updSourceCount(commentType, relatedId, 1)
+    const updCountRes = await CommentModel.updSourceCount(commentType, relatedEntity, 1)
     console.log(updUserRes, updCountRes)
 
     if (commentInfo._id && updUserRes.modifiedCount === 1 && updCountRes.modifiedCount === 1) {
-      // addRes.user_info = await CommentModel.findUser(myId)
       commentInfo.islike = false
       if ([1, 2].includes(addRes.comment_type)) {
         commentInfo.replies = []
@@ -102,6 +140,7 @@ class CommentController {
   //对评论点赞、取消点赞
   async LikeComment(ctx) {
     const myId = ctx.state.user.id
+    const my_id = ctx.state.user._id
     const { commentId, type } = ctx.request.body
     console.log(commentId, type)
     const isLike = await CommentModel.isLike(myId, commentId)
@@ -114,6 +153,25 @@ class CommentController {
         const updRes = await CommentModel.updLikeCount(commentId, 1)
         console.log(addRes, updRes)
         if (addRes.modifiedCount === 1 && updRes.modifiedCount === 1) {
+          const commentInfo = await CommentModel.getComment(commentId)
+          const authorInfo = await UserModel.getInfo(commentInfo.user_info.user_id)
+
+          if (my_id !== String(authorInfo._id)) {
+            const addNotifyRes = await MessageModel.addNotifyMessage(
+              '赞了你的评论',
+              my_id,
+              authorInfo._id,
+              Date.now(),
+              'like',
+              undefined,
+              commentInfo._id,
+              'Comment',
+              commentInfo.related_work,
+              commentInfo.work_type
+            )
+            console.log(addNotifyRes)
+          }
+
           ctx.body = {
             type: 'success',
             status: 200,
@@ -172,7 +230,7 @@ class CommentController {
       const myId = ctx.state.user.id
       const { commentId } = ctx.request.query
       console.log('commentId', commentId)
-      const { _doc: commentData } = await CommentModel.findComment(commentId)
+      const { _doc: commentData } = await CommentModel.getComment(commentId)
       console.log(commentData)
       const islike = await CommentModel.isLike(myId, commentId)
       commentData.is_like = islike

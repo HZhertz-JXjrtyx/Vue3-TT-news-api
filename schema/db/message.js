@@ -31,13 +31,21 @@ const messageSchema = new mongoose.Schema({
   },
   related_entity: {
     type: mongoose.Schema.Types.ObjectId,
-    refPath: 'onModel',
+    refPath: 'entity_type',
     required: true,
   },
-  onModel: {
+  entity_type: {
     type: String,
     enum: ['Article', 'Video', 'Comment', 'User', 'Conversation'],
     required: true,
+  },
+	related_work: {
+    type: mongoose.Schema.Types.ObjectId,
+    refPath: 'work_type',
+  },
+  work_type: {
+    type: String,
+    enum: ['Article', 'Video'],
   },
   isRead: {
     type: Boolean,

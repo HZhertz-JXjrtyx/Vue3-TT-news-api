@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken'
 import { PRIVATE_KEY } from '../../app/config.js'
 import sendEmail from '../../utils/sendEmail.js'
 import UserModel from '../../model/user/userModel.js'
-import userModel from '../../model/user/userModel.js'
+import MessageModel from '../../model/user/messageModel.js'
 import renameFileBasedOnContent from '../../utils/renameFile.js'
 
 class UserController {
@@ -197,8 +197,9 @@ class UserController {
   }
   // 关注、取消关注用户
   async updateUserFollow(ctx) {
-    let myId = ctx.state.user.id
-    let { userId, type } = ctx.request.body
+    const myId = ctx.state.user.id
+    const my_id = ctx.state.user._id
+    const { userId, type } = ctx.request.body
     //  关注
     if (type) {
       const res = await UserModel.isFollowing(myId, userId)
@@ -211,6 +212,20 @@ class UserController {
         if (!result) {
           ctx.body = { type: 'error', message: '关注用户失败！' }
         } else {
+          const userInfo = await UserModel.getInfo(userId)
+          if (my_id !== String(userInfo._id)) {
+            const addNotifyRes = await MessageModel.addNotifyMessage(
+              '关注了你',
+              my_id,
+              userInfo._id,
+              Date.now(),
+              'follow',
+              undefined,
+              userInfo._id,
+              'User'
+            )
+            console.log(addNotifyRes)
+          }
           ctx.body = {
             type: 'success',
             status: 200,
@@ -306,7 +321,7 @@ class UserController {
       console.log(userId, type, page, size)
       const offset = (page - 1) * size
 
-      const worksData = await userModel.getWorks(userId, type, offset, parseInt(size))
+      const worksData = await UserModel.getWorks(userId, type, offset, parseInt(size))
       // console.log(worksData)
       if (worksData.length === 0) {
         ctx.status = 200
@@ -342,7 +357,7 @@ class UserController {
       const offset = (page - 1) * size
       const {
         _doc: { fans },
-      } = await userModel.getFans(userId, offset, parseInt(size))
+      } = await UserModel.getFans(userId, offset, parseInt(size))
       console.log(fans)
       if (fans.length === 0) {
         ctx.status = 200
@@ -378,7 +393,7 @@ class UserController {
       const offset = (page - 1) * size
       const {
         _doc: { followers },
-      } = await userModel.getFollowers(userId, offset, parseInt(size))
+      } = await UserModel.getFollowers(userId, offset, parseInt(size))
       console.log(followers)
       if (followers.length === 0) {
         ctx.status = 200
@@ -474,6 +489,7 @@ class UserController {
       }
     }
   }
+  // 获取用户绑定信息
   async getUserBind(ctx) {
     const myId = ctx.state.user.id
     const bindData = await UserModel.getBind(myId)
@@ -493,6 +509,7 @@ class UserController {
       }
     }
   }
+  // 更新密码
   async updateUserPassword(ctx) {
     const myId = ctx.state.user.id
     const {
@@ -543,37 +560,5 @@ class UserController {
       ctx.body = { type: 'error', message: '验证码无效' }
     }
   }
-
-  // //修改密码
-  // async updatePwd(ctx) {
-  //   let myid = ctx.state.user.id
-  //   let myinfo = ctx.request.body
-  //   console.log(myid, myinfo)
-  //   const rows = await User.getPwd(myid)
-  //   console.log(rows)
-  //   if (rows.length !== 1) {
-  //     ctx.body = { type: 'error', message: '用户不存在！' }
-  //   } else {
-  //     const compareResult = bcrypt.compareSync(myinfo.oldpwd, rows[0].user_password)
-  //     if (!compareResult) {
-  //       ctx.body = { type: 'error', message: '密码错误！' }
-  //     } else if (myinfo.oldpwd === myinfo.newpwd) {
-  //       ctx.body = { type: 'error', message: '新密码不能与旧密码相同！' }
-  //     } else {
-  //       const newPwd = bcrypt.hashSync(myinfo.newpwd, 10)
-  //       const data = await User.updatePwd(newPwd, myid)
-  //       console.log(data)
-  //       if (data.modifiedCount !== 1) {
-  //         ctx.body = { type: 'error', message: '更新密码失败！' }
-  //       } else {
-  //         ctx.body = {
-  //           type: 'success',
-  //           status: 200,
-  //           message: '更新密码成功！',
-  //         }
-  //       }
-  //     }
-  //   }
-  // }
 }
 export default new UserController()
