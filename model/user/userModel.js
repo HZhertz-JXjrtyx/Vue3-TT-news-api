@@ -187,12 +187,22 @@ class UserModel {
   }
 
   //获取用户的粉丝列表
-  async getFans(user_id) {
-    return await User.findOne({ user_id }, 'fans')
+  async getFans(user_id, offset, size) {
+    const { fans } = await User.findOne({ user_id }, 'fans')
+    const fansArray = fans.slice(offset, offset + size)
+    const fansInfoPromises = fansArray.map((fan_id) =>
+      User.findOne({ user_id: fan_id }, 'user_id user_nickname user_avatar user_intro')
+    )
+    return await Promise.all(fansInfoPromises)
   }
   //获取用户的关注列表
-  async getFollowers(user_id) {
-    return await User.findOne({ user_id }, 'followers')
+  async getFollowers(user_id, offset, size) {
+    const { followers } = await User.findOne({ user_id }, 'followers')
+    const followersArray = followers.slice(offset, offset + size)
+    const followersInfoPromises = followersArray.map((follower_id) =>
+      User.findOne({ user_id: follower_id }, 'user_id user_nickname user_avatar user_intro')
+    )
+    return await Promise.all(followersInfoPromises)
   }
   //获取用户的收藏列表
   async getFavorite(user_id, type, offset, size) {

@@ -115,7 +115,7 @@ class VideoController {
 							videoInfo._id,
               'Video'
             )
-            console.log(addNotifyRes)
+            // console.log(addNotifyRes)
           }
 
           ctx.body = {
@@ -170,7 +170,7 @@ class VideoController {
   async publishVideo(ctx) {
     const myId = ctx.state.user.id
     const { channelId, title, intro, video, coverImage, duration, uiStyle, publishTime } = ctx.request.body
-    console.log(myId, channelId, title, intro, video, coverImage, duration, uiStyle, publishTime)
+    // console.log(myId, channelId, title, intro, video, coverImage, duration, uiStyle, publishTime)
     const addRes = await VideoModel.addVideo(
       myId,
       channelId,
@@ -183,7 +183,7 @@ class VideoController {
       publishTime
     )
     const updRes = await UserModel.updateWorkcount(myId)
-    console.log(addRes, updRes)
+    // console.log(addRes, updRes)
     if (addRes.video_id && updRes.modifiedCount === 1) {
       ctx.body = {
         type: 'success',

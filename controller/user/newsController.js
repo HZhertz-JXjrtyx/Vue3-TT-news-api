@@ -44,7 +44,7 @@ class NewsController {
   async getHotList(ctx) {
     try {
       const hotList = await NewsModel.getHot()
-      console.log(hotList.length)
+      // console.log(hotList.length)
       if (hotList.length === 0) {
         ctx.status = 200
         ctx.body = {

@@ -4,7 +4,6 @@ import Channel from '../../schema/db/channel.js'
 class ChannelModel {
   async getChannels(userId) {
     const { channel } = (await User.find({ user_id: userId }, 'channel'))[0]
-    console.log(channel)
     let selectedChannels = []
     for (let id of channel.selected) {
       let channelData = await Channel.findOne({ id: id }, { _id: 0 })
@@ -22,7 +21,7 @@ class ChannelModel {
     }
     return {
       selected: selectedChannels,
-      unselected: unselectedChannels
+      unselected: unselectedChannels,
     }
   }
   async patchChannels(userId, newChannels) {

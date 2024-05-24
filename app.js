@@ -5,11 +5,12 @@ import bodyParser from 'koa-bodyparser'
 import Cors from 'koa2-cors'
 import Static from 'koa-static'
 import range from 'koa-range'
-import { Server } from 'socket.io'
+// import { Server } from 'socket.io'
 import http from 'http'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import checkToken from './middleware/checkToken.js'
+import WebSocketServer from './utils/WebSocketServer.js'
 
 import userRouter from './router/user/userRouter.js'
 import channelRouter from './router/user/channelRouter.js'
@@ -23,7 +24,47 @@ import messageRouter from './router/user/messageRouter.js'
 const app = new Koa()
 
 const server = http.createServer(app.callback())
-const io = new Server(server)
+// 创建 WebSocketServer 实例
+const webSocketServer = new WebSocketServer()
+// 初始化 WebSocket 服务器
+webSocketServer.initialize(server)
+// const io = new Server(server)
+// // 保存所有连接的对象
+// const users = {}
+
+// // 建立连接
+// io.on('connection', (socket) => {
+//   const userId = socket.handshake.query.userId
+//   console.log(userId)
+//   users[userId] = socket
+
+//   console.log('a user connected: ' + userId)
+//   // sendBySocketToUser('chat', userId, { message: 'user connected' })
+
+//   // 断开连接
+//   socket.on('disconnect', () => {
+//     console.log('user disconnected: ' + userId)
+//     delete users[userId]
+//   })
+//   // 接收消息
+//   socket.on('chat message', (data) => {
+//     const { senderId, receiverId, msg } = data
+//     // 处理
+//   })
+// })
+
+// // 向所有客户端广播消息 未使用
+// export function sendBySocketToAll(msg) {
+//   io.emit('system message', msg)
+// }
+
+// // 向特定的用户发送消息
+// // msgType: chat-新增对话 chat message-新增对话消息
+// export function sendBySocketToUser(msgType, receiverId, msg) {
+//   if (users[receiverId]) {
+//     users[receiverId].emit(msgType, msg)
+//   }
+// }
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -42,111 +83,6 @@ app.use(commentRouter.routes())
 app.use(searchRouter.routes())
 app.use(messageRouter.routes())
 
-// import News from './schema/db/news.js'
-// import CheckCount from './schema/db/check_count.js'
-// import MessageController from './controller/user/messageController.js'
-// import MessageModel from './model/user/messageModel.js'
-// import sendEmail from './utils/sendEmail.js'
-// import User from './schema/db/users.js'
-// io.on('connection', (socket) => {
-//   console.log('a user connected')
-//   //接收到消息时触发
-//   // socket.emit('hello', {
-//   //   message: 'data'
-//   // })
-//   socket.on('check-for-updates', async (data) => {
-//     console.log('data', data)
-//     let userId = data.user_id
-//     // 检查数据库是否有新数据
-//     const result = await checkForNewData()
-//     // console.log(result)
-//     if (result) {
-//       console.log('更新了' + result.length + '条新数据')
-//       // 用户关注的作者是否有更新
-//       const atData = await MessageController.chooseAtData(userId, result)
-//       console.log('atData.length', atData.length)
-//       if (atData.length !== 0) {
-//         const maxTakeTimeItem = atData.reduce((maxItem, currentItem) =>
-//           currentItem.take_time > maxItem.take_time ? currentItem : maxItem
-//         )
-//         const sendTime = Math.floor(Date.now() / 1000)
-//         // 发送邮件
-//         const user = await User.findOne({ user_id: userId })
-//         const userEmail = user.user_email
-//         const title = maxTakeTimeItem.title
-//         const name = maxTakeTimeItem.author_info.name
-//         const desc = maxTakeTimeItem.article_info.description
-//         const href = maxTakeTimeItem.url
-//         let info = await sendEmail(
-//           userEmail,
-//           '关注的消息',
-//           title,
-//           `<p>来自你的关注:${name}</p><h1>${title}</h1><p>${desc}</p><br/>
-//         更多信息点击 ——> <a href="${href}">${href}</a>`
-//         )
-//         console.log(`Message sent: ${info.messageId}`)
-//         // 保存到数据库消息列表
-//         await MessageModel.updateAttMessage(userId, sendTime, atData)
-//         // 向前端发送数据
-
-//         socket.emit(`${userId}`, {
-//           message: '关注的新消息',
-//           sendTime: sendTime,
-//           newdata: atData,
-//         })
-//       }
-//       const data = await MessageController.chooseData(userId, result)
-//       console.log(data.title)
-//       // 如果有新数据，将推送消息
-//       const sendTime = Math.floor(Date.now() / 1000)
-//       // 发送邮件
-//       const user = await User.findOne({ user_id: userId })
-//       const userEmail = user.user_email
-//       const title = data.title
-//       const desc = data.article_info.description
-//       const href = data.url
-//       let info = await sendEmail(
-//         userEmail,
-//         '头条新闻',
-//         title,
-//         `<h1>${title}</h1><p>${desc}</p><br/>
-//         更多信息点击 ——> <a href="${href}">${href}</a>`
-//       )
-//       console.log(`Message sent: ${info.messageId}`)
-//       // 保存到数据库消息列表
-//       await MessageModel.updateMessageList(userId, sendTime, data)
-//       // 向前端发送数据
-
-//       socket.emit(`new-data${userId}`, {
-//         message: '最新数据',
-//         sendTime: sendTime,
-//         newdata: data,
-//       })
-//     }
-//   })
-// })
-// async function checkForNewData() {
-//   // 获取ALL_news集合的数据数量
-//   const newsCount = await News.countDocuments()
-//   // 获取check_count集合中name="ALL_news_count"的文档的count值
-//   const checkCountDoc = await CheckCount.findOne({ name: 'ALL_news_count' })
-//   const count = checkCountDoc ? checkCountDoc.count : 0
-//   if (newsCount > count) {
-//     // 如果newsCount大于count，则表明有新数据
-//     // 更新check_count集合中name="ALL_news_count"的文档的count值
-//     await CheckCount.updateOne({ name: 'ALL_news_count' }, { count: newsCount }, { upsert: true })
-//     // 获取ALL_news集合的所有文档，按照文档的take_time降序排序取前newsCount-count条数据
-//     const newData = await News.find()
-//       .sort({ take_time: -1 })
-//       .limit(newsCount - count)
-//     return newData
-//   } else {
-//     // 更新check_count集合中name="ALL_news_count"的文档的count值
-//     await CheckCount.updateOne({ name: 'ALL_news_count' }, { count: newsCount }, { upsert: true })
-//     // 没有新数据
-//     return null
-//   }
-// }
 //监听端口
 server.listen(3007, () => {
   console.log('server runing at http://127.0.0.1:3007')

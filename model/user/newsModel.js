@@ -6,10 +6,6 @@ import HotList from '../../schema/db/hot_list.js'
 class NewsModel {
   // 获取新闻列表
   async getNews(query, offset, pageSize) {
-    // const articleDBurl =
-    //   'channel_id article_id title type ui_style image_list publish_time article_info.description user_id view_count collect_count comment_count like_count'
-    // const videoDBurl =
-    //   'channel_id video_id title type ui_style image_src publish_time video_info.description video_info.duration user_id play_count collect_count comment_count like_count'
     const articlesPromise = Article.find(query).sort({ publish_time: -1 }).exec()
     const videosPromise = Video.find(query).sort({ publish_time: -1 }).exec()
     const [articles, videos] = await Promise.all([articlesPromise, videosPromise])

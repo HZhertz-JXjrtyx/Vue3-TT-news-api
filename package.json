@@ -1,6 +1,6 @@
 {
   "type": "module",
-  "name": "api_koa",
+  "name": "vue3-tt-news-api",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -27,7 +27,7 @@
     "mongoose": "^7.1.0",
     "multer": "1.4.5-lts.1",
     "nodemailer": "^6.9.2",
-    "socket.io": "^4.6.1",
+    "socket.io": "^4.7.5",
     "uuid": "^9.0.1"
   }
 }

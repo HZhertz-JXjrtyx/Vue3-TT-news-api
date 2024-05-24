@@ -168,10 +168,38 @@ class MessageModel {
         messages,
       }
     } catch (error) {
-      console.error(error)
+      // console.error(error)
       throw error
     }
   }
+
+  // 通过发送方与接收方查找对话/是否存在对话
+  async findByTwoUser(userA, userB) {
+    const conversations = await Conversation.findOne({
+      'participants.user': {
+        $all: [userA, userB],
+      },
+    })
+    return conversations
+  }
+  async findConversation(conversationId) {
+    return await Conversation.findById(conversationId).populate({
+      path: 'participants.user',
+      select: 'user_id user_nickname user_avatar',
+    })
+  }
+  // 新增对话项
+  async addConversation(userA, userB) {
+    const res = await Conversation.create({
+      participants: [{ user: userA }, { user: userB }],
+    })
+    const newConversation = await Conversation.findById(res._id).populate({
+      path: 'participants.user',
+      select: 'user_id user_nickname user_avatar',
+    })
+    return newConversation
+  }
+
   // 新增对话消息
   async addConversationMessage(sender, receiver, conversation, content, created_at) {
     const newMessage = await Message.create({
@@ -181,37 +209,9 @@ class MessageModel {
       created_at,
       type: 'chat',
       related_entity: conversation,
-      onModel: 'Conversation',
+      entity_type: 'Conversation',
     })
 
-    // const udpRes = await Conversation.updateOne(
-    //   { _id: conversation, 'participants.user': sender },
-    //   {
-    //     $push: { messages: newMessage._id },
-    //     $inc: { 'participants.$.unread_count': 1 },
-    //     $set: { 'participants.$[].last_visible_message': newMessage._id },
-    //   }
-    // )
-    // const udpRes = await Conversation.aggregate([
-    //   { $match: { _id: conversation } },
-    //   { $unwind: { path: '$participants', includeArrayIndex: 'arrayIndex' } },
-    //   {
-    //     $addFields: {
-    //       'participants.unread_count': {
-    //         $cond: [
-    //           { $eq: ['$participants.user', sender] },
-    //           { $add: ['$participants.unread_count', 1] },
-    //           '$participants.unread_count',
-    //         ],
-    //       },
-    //     },
-    //   },
-    //   { $addFields: { 'participants.last_visible_message': newMessage._id } },
-    //   {
-    //     $group: { _id: '$_id', participants: { $push: '$participants' }, messages: { $first: '$messages' } },
-    //   },
-    //   { $addFields: { messages: { $concatArrays: ['$messages', [newMessage._id]] } } },
-    // ])
     const udpRes1 = await Conversation.updateOne(
       { _id: conversation, 'participants.user': receiver },
       {

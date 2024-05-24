@@ -2,11 +2,11 @@ import Channel from '../../model/user/channelModel.js'
 
 class ChannelController {
   async getUserChannels(ctx) {
-    console.log(ctx.state.user)
+    // console.log(ctx.state.user)
     let userId = ctx.state.user.id
     if (userId) {
       const rows = await Channel.getChannels(userId)
-      console.log(rows)
+      // console.log(rows)
       if (rows.selected.length === 0) {
         ctx.body = { type: 'error', message: '获取用户频道信息失败！' }
       } else {
@@ -51,7 +51,7 @@ class ChannelController {
   async patchUserChannels(ctx) {
     const userId = ctx.state.user.id
     const newChannels = ctx.request.body
-    console.log(userId, newChannels)
+    // console.log(userId, newChannels)
     try {
       const result = await Channel.patchChannels(userId, newChannels)
       if (result) {
@@ -97,9 +97,9 @@ class ChannelController {
   async updateUserChannels(ctx) {
     let myid = ctx.state.user.id
     let channelInfo = ctx.request.body
-    console.log(myid, channelInfo)
+    // console.log(myid, channelInfo)
     const rows = await Channel.addChannel(myid, channelInfo.channelId)
-    console.log(rows)
+    // console.log(rows)
     if (rows.modifiedCount !== 1) {
       ctx.body = { type: 'error', message: '添加用户频道失败！' }
     } else {
@@ -114,9 +114,9 @@ class ChannelController {
   async deleteUserChannels(ctx) {
     let myid = ctx.state.user.id
     let channelInfo = ctx.request.query
-    console.log(myid, channelInfo)
+    // console.log(myid, channelInfo)
     const rows = await Channel.deleteChannel(myid, channelInfo.channelId)
-    console.log(rows)
+    // console.log(rows)
     if (rows.modifiedCount !== 1) {
       ctx.body = { type: 'error', message: '删除用户频道失败！' }
     } else {

@@ -10,23 +10,23 @@ class UserController {
   // 注册
   async register(ctx) {
     const userinfo = ctx.request.body
-    console.log(userinfo)
+    // console.log(userinfo)
     const usernames = await UserModel.getUser(userinfo.name) //用户名是否重复
-    console.log(usernames)
+    // console.log(usernames)
     if (usernames.length > 0) {
       ctx.body = { type: 'error', message: '用户名被占用，请更换其他用户名！' }
     } else {
       // 验证码是否正确
       // 拿到数据库中存储的验证码
       const verifyCode = await UserModel.findCode(userinfo.name, 'register')
-      console.log(verifyCode)
+      // console.log(verifyCode)
       if (verifyCode) {
         if (verifyCode.verification_code == userinfo.code) {
           const salt = bcrypt.genSaltSync(10)
           const hash = bcrypt.hashSync(userinfo.password, salt) //密文
           userinfo.password = hash
           const result = await UserModel.addUser(userinfo)
-          console.log(result)
+          // console.log(result)
           if (result.user_id) {
             ctx.body = {
               type: 'success',
@@ -47,9 +47,9 @@ class UserController {
   // 用户名是否唯一
   async checkName(ctx) {
     let userInfo = ctx.request.body
-    console.log(userInfo)
+    // console.log(userInfo)
     const rows = await UserModel.getUser(userInfo.username)
-    console.log(rows)
+    // console.log(rows)
     if (rows.length === 0) {
       ctx.body = {
         status: 200,
@@ -68,15 +68,15 @@ class UserController {
   async getVerificationCode(ctx) {
     try {
       const { userName, userEmail, type } = ctx.request.query
-      console.log(userName, userEmail, type)
+      // console.log(userName, userEmail, type)
       const findRes = await UserModel.findCode(userName, type)
       if (findRes && Date.now() - findRes.createdAt < 60000) {
         ctx.body = { status: 429, type: 'error', message: '验证码发送频繁！' }
       } else {
         const verificationCode = Math.floor(Math.random() * 900000) + 100000
-        console.log(verificationCode)
+        // console.log(verificationCode)
         const result = await UserModel.saveCode(userName, type, verificationCode)
-        console.log(result)
+        // console.log(result)
         if (result.user_name === userName) {
           // 通过邮件发送验证码
           const info = await sendEmail(
@@ -86,7 +86,7 @@ class UserController {
             `<h1>${type === 'register' ? '注册验证' : '安全验证'}</h1>
 						 <h1>你的验证码为${verificationCode}，5分钟内有效</h1>`
           )
-          console.log(`Message sent: ${info.messageId}`)
+          // console.log(`Message sent: ${info.messageId}`)
           ctx.body = {
             status: 200,
             message: '验证码发送成功',
@@ -106,9 +106,9 @@ class UserController {
   // 登录
   async login(ctx) {
     let userInfo = ctx.request.body
-    console.log(userInfo.name, userInfo.password)
+    // console.log(userInfo.name, userInfo.password)
     const rows = await UserModel.getUser(userInfo.name)
-    console.log(rows)
+    // console.log(rows)
     if (rows.length === 1) {
       const compareResult = bcrypt.compareSync(userInfo.password, rows[0].user_password)
       if (compareResult) {
@@ -141,7 +141,7 @@ class UserController {
   // 退出登录
   async logout(ctx) {
     let myid = ctx.state.user.id
-    console.log('0000000000', myid)
+    // console.log('0000000000', myid)
     // 用户下线
     await UserModel.logout(myid)
     ctx.body = {
@@ -170,9 +170,9 @@ class UserController {
   async addUserBrowse(ctx) {
     const myId = ctx.state.user.id
     const { id, type } = ctx.request.body
-    console.log(myId, id, type)
+    // console.log(myId, id, type)
     const result = await UserModel.addBrowse(myId, id, type)
-    console.log(result)
+    // console.log(result)
     if (result.modifiedCount === 1) {
       ctx.body = {
         type: 'success',
@@ -203,12 +203,12 @@ class UserController {
     //  关注
     if (type) {
       const res = await UserModel.isFollowing(myId, userId)
-      console.log(res)
+      // console.log(res)
       if (res) {
         ctx.body = { type: 'error', message: '已关注！' }
       } else {
         const result = await UserModel.addFollowing(myId, userId)
-        console.log(result)
+        // console.log(result)
         if (!result) {
           ctx.body = { type: 'error', message: '关注用户失败！' }
         } else {
@@ -221,10 +221,10 @@ class UserController {
               Date.now(),
               'follow',
               undefined,
-              userInfo._id,
+              my_id,
               'User'
             )
-            console.log(addNotifyRes)
+            // console.log(addNotifyRes)
           }
           ctx.body = {
             type: 'success',
@@ -235,12 +235,12 @@ class UserController {
       }
     } else {
       const res = await UserModel.isFollowing(myId, userId)
-      console.log(res)
+      // console.log(res)
       if (!res) {
         ctx.body = { type: 'error', message: '未关注！' }
       } else {
         const result = await UserModel.deleteFollowing(myId, userId)
-        console.log(result)
+        // console.log(result)
         if (!result) {
           ctx.body = { type: 'error', message: '取消关注用户失败！' }
         } else {
@@ -274,9 +274,9 @@ class UserController {
   async updateUserProfile(ctx) {
     const myId = ctx.state.user.id
     const profileInfo = ctx.request.body
-    console.log(myId, profileInfo)
+    // console.log(myId, profileInfo)
     const result = await UserModel.updateProfile(myId, profileInfo)
-    console.log(result)
+    // console.log(result)
     if (result.acknowledged) {
       if (result.modifiedCount) {
         ctx.body = {
@@ -300,9 +300,9 @@ class UserController {
   // 获取用户信息
   async getUserDetail(ctx) {
     const { userId } = ctx.request.query
-    console.log(userId)
+    // console.log(userId)
     const userInfo = await UserModel.getInfo(userId)
-    console.log(userInfo)
+    // console.log(userInfo)
     if (userInfo.user_id) {
       ctx.body = {
         type: 'success',
@@ -318,7 +318,7 @@ class UserController {
   async getUserWorks(ctx) {
     try {
       const { userId, type, page, size } = ctx.request.query
-      console.log(userId, type, page, size)
+      // console.log(userId, type, page, size)
       const offset = (page - 1) * size
 
       const worksData = await UserModel.getWorks(userId, type, offset, parseInt(size))
@@ -353,19 +353,17 @@ class UserController {
   async getUserFans(ctx) {
     try {
       const { userId, page, size } = ctx.request.query
-      console.log(userId, page, size)
+      // console.log(userId, page, size)
       const offset = (page - 1) * size
-      const {
-        _doc: { fans },
-      } = await UserModel.getFans(userId, offset, parseInt(size))
-      console.log(fans)
-      if (fans.length === 0) {
+      const fansData = await UserModel.getFans(userId, offset, parseInt(size))
+      // console.log(fansData)
+      if (fansData.length === 0) {
         ctx.status = 200
         ctx.body = {
           type: 'success',
           status: 204,
           message: '没有更多数据！',
-          data: [],
+          data: fansData,
         }
       } else {
         ctx.status = 200
@@ -373,7 +371,7 @@ class UserController {
           type: 'success',
           status: 200,
           message: '获取粉丝列表成功！',
-          data: fans,
+          data: fansData,
         }
       }
     } catch (error) {
@@ -389,19 +387,17 @@ class UserController {
   async getUserFollowers(ctx) {
     try {
       const { userId, page, size } = ctx.request.query
-      console.log(userId, page, size)
+      // console.log(userId, page, size)
       const offset = (page - 1) * size
-      const {
-        _doc: { followers },
-      } = await UserModel.getFollowers(userId, offset, parseInt(size))
-      console.log(followers)
-      if (followers.length === 0) {
+      const followersData = await UserModel.getFollowers(userId, offset, parseInt(size))
+      // console.log(followersData)
+      if (followersData.length === 0) {
         ctx.status = 200
         ctx.body = {
           type: 'success',
           status: 204,
           message: '没有更多数据！',
-          data: [],
+          data: followersData,
         }
       } else {
         ctx.status = 200
@@ -409,7 +405,7 @@ class UserController {
           type: 'success',
           status: 200,
           message: '获取关注列表成功！',
-          data: followers,
+          data: followersData,
         }
       }
     } catch (error) {
@@ -426,7 +422,7 @@ class UserController {
     try {
       const myId = ctx.state.user.id
       const { type, page, size } = ctx.request.query
-      console.log(myId, type, page, size)
+      // console.log(myId, type, page, size)
       const offset = (page - 1) * size
       const favoriteData = await UserModel.getFavorite(myId, type, offset, parseInt(size))
       if (favoriteData.length === 0) {
@@ -460,7 +456,7 @@ class UserController {
     try {
       const myId = ctx.state.user.id
       const { type, page, size } = ctx.request.query
-      console.log(myId, type, page, size)
+      // console.log(myId, type, page, size)
       const offset = (page - 1) * size
       const browseData = await UserModel.getBrowse(myId, type, offset, parseInt(size))
       if (browseData.length === 0) {
@@ -516,7 +512,7 @@ class UserController {
       _doc: { user_name },
     } = await UserModel.getInfo(myId)
     const { oldPwd, newPwd, code } = ctx.request.body
-    console.log(oldPwd, newPwd, code)
+    // console.log(oldPwd, newPwd, code)
     // 验证验证码
     const codeRes = await UserModel.findCode(user_name, 'changePwd')
     if (codeRes) {
@@ -525,9 +521,9 @@ class UserController {
         const {
           _doc: { user_password },
         } = await UserModel.getPassword(myId)
-        console.log(user_password)
+        // console.log(user_password)
         const compareResult = bcrypt.compareSync(oldPwd, user_password)
-        console.log(compareResult)
+        // console.log(compareResult)
         if (compareResult) {
           // 新旧密码是否相同
           if (oldPwd !== newPwd) {
@@ -535,7 +531,7 @@ class UserController {
             const pwdHash = bcrypt.hashSync(newPwd, bcrypt.genSaltSync(10))
             // 更新密码
             const result = await UserModel.updatePwd(myId, pwdHash)
-            console.log(result)
+            // console.log(result)
             if (result.modifiedCount === 1) {
               // 删除验证码
               await UserModel.delCode(user_name, 'changePwd')

@@ -4,6 +4,7 @@ import db from '../../db/db.js'
 const conversationSchema = new mongoose.Schema({
   participants: [
     {
+      _id: false,
       user: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
@@ -20,10 +21,12 @@ const conversationSchema = new mongoose.Schema({
       last_invisible_message: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Message',
+        default: null,
       },
       last_visible_message: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Message',
+        default: null,
       },
     },
   ],

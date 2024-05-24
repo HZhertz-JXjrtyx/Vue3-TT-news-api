@@ -118,7 +118,7 @@ class ArticleController {
 							articleInfo._id,
               'Article'
             )
-            console.log(addNotifyRes)
+            // console.log(addNotifyRes)
           }
           ctx.body = {
             type: 'success',
@@ -153,7 +153,7 @@ class ArticleController {
       const newFilename = await renameFileBasedOnContent(file.path)
       imageList.push('http://127.0.0.1:3007/article_images/' + newFilename)
     }
-    console.log(imageList)
+    // console.log(imageList)
     ctx.body = {
       type: 'success',
       status: 200,
@@ -166,11 +166,11 @@ class ArticleController {
     const fileArr = ctx.request.files
     const coverList = []
     for (let file of fileArr) {
-      console.log('file.path', file.path)
+      // console.log('file.path', file.path)
       const newFilename = await renameFileBasedOnContent(file.path)
       coverList.push('http://127.0.0.1:3007/article_images/' + newFilename)
     }
-    console.log(coverList)
+    // console.log(coverList)
     ctx.body = {
       type: 'success',
       status: 200,
@@ -182,7 +182,7 @@ class ArticleController {
   async publishArticle(ctx) {
     const myId = ctx.state.user.id
     const { channelId, title, content, coverImage, articleImage, uiStyle, publishTime } = ctx.request.body
-    console.log(myId, channelId, title, content, coverImage, articleImage, uiStyle, publishTime)
+    // console.log(myId, channelId, title, content, coverImage, articleImage, uiStyle, publishTime)
     const addRes = await ArticleModel.addArticle(
       myId,
       channelId,
@@ -194,7 +194,7 @@ class ArticleController {
       publishTime
     )
     const updRes = await ArticleModel.updateWorkcount(myId)
-    console.log(addRes, updRes)
+    // console.log(addRes, updRes)
     if (addRes.article_id && updRes.modifiedCount === 1) {
       ctx.body = {
         type: 'success',

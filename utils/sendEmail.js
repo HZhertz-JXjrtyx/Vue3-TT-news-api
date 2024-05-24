@@ -7,7 +7,7 @@ async function sendEmail(to, subject, text, html) {
     port: 465,
     secure: true,
     auth: {
-      user: '2634027884@qq.com',
+      user: process.env.EMAIL,
       pass: process.env.EMAIL_PASSWORD,
     },
   })

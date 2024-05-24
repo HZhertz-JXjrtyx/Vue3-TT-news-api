@@ -8,7 +8,7 @@ class CommentController {
     // try {
     const myId = ctx.state.user.id
     const { commentType, relatedEntity, page, size } = ctx.request.query
-    console.log(myId, commentType, relatedEntity, page, size)
+    // console.log(myId, commentType, relatedEntity, page, size)
     const offset = (page - 1) * size
     const docs = await CommentModel.getComments(
       parseInt(commentType),
@@ -17,7 +17,7 @@ class CommentController {
       offset,
       parseInt(size)
     )
-    console.log(docs)
+    // console.log(docs)
     if (docs.length === 0) {
       ctx.status = 200
       ctx.body = {
@@ -58,17 +58,17 @@ class CommentController {
       relatedWork,
       workType,
     } = ctx.request.body
-    console.log(
-      my_id,
-      commentType,
-      replyUser,
-      content,
-      createdTime,
-      parentComment,
-      relatedEntity,
-      relatedWork,
-      workType
-    )
+    // console.log(
+    //   my_id,
+    //   commentType,
+    //   replyUser,
+    //   content,
+    //   createdTime,
+    //   parentComment,
+    //   relatedEntity,
+    //   relatedWork,
+    //   workType
+    // )
     const entityTypeEnum = {
       1: 'Article',
       2: 'Video',
@@ -87,10 +87,10 @@ class CommentController {
       relatedWork,
       workType
     )
-    console.log(addRes._id)
+    // console.log(addRes._id)
 
     const comment_id = addRes._id.toString()
-    console.log(comment_id)
+    // console.log(comment_id)
 
     const { _doc: commentInfo } = await CommentModel.getComment(comment_id)
 
@@ -113,19 +113,19 @@ class CommentController {
         commentInfo.related_work,
         commentInfo.work_type
       )
-      console.log(addNotifyRes)
+      // console.log(addNotifyRes)
     }
 
     const updUserRes = await CommentModel.updUserComment(myId, comment_id, 'add')
     const updCountRes = await CommentModel.updSourceCount(commentType, relatedEntity, 1)
-    console.log(updUserRes, updCountRes)
+    // console.log(updUserRes, updCountRes)
 
     if (commentInfo._id && updUserRes.modifiedCount === 1 && updCountRes.modifiedCount === 1) {
       commentInfo.islike = false
       if ([1, 2].includes(addRes.comment_type)) {
         commentInfo.replies = []
       }
-      console.log(commentInfo)
+      // console.log(commentInfo)
       ctx.body = {
         type: 'success',
         status: 200,
@@ -142,16 +142,16 @@ class CommentController {
     const myId = ctx.state.user.id
     const my_id = ctx.state.user._id
     const { commentId, type } = ctx.request.body
-    console.log(commentId, type)
+    // console.log(commentId, type)
     const isLike = await CommentModel.isLike(myId, commentId)
-    console.log(isLike)
+    // console.log(isLike)
     if (type) {
       if (isLike) {
         ctx.body = { type: 'success', status: 200, message: '已对评论点赞！' }
       } else {
         const addRes = await CommentModel.addLike(myId, commentId)
         const updRes = await CommentModel.updLikeCount(commentId, 1)
-        console.log(addRes, updRes)
+        // console.log(addRes, updRes)
         if (addRes.modifiedCount === 1 && updRes.modifiedCount === 1) {
           const commentInfo = await CommentModel.getComment(commentId)
           const authorInfo = await UserModel.getInfo(commentInfo.user_info.user_id)
@@ -169,7 +169,7 @@ class CommentController {
               commentInfo.related_work,
               commentInfo.work_type
             )
-            console.log(addNotifyRes)
+            // console.log(addNotifyRes)
           }
 
           ctx.body = {
@@ -187,7 +187,7 @@ class CommentController {
       } else {
         const delRes = await CommentModel.deleteLike(myId, commentId)
         const updRes = await CommentModel.updLikeCount(commentId, -1)
-        console.log(delRes)
+        // console.log(delRes)
         if (delRes.modifiedCount === 1 && updRes.modifiedCount === 1) {
           ctx.body = {
             type: 'success',
@@ -205,11 +205,11 @@ class CommentController {
   async deleteComment(ctx) {
     const myId = ctx.state.user.id
     const { commentId, commentType, relatedId } = ctx.request.body
-    console.log(commentId, commentType, relatedId)
+    // console.log(commentId, commentType, relatedId)
     const delRes = await CommentModel.deleteComment(commentId)
     const updUserRes = await CommentModel.updUserComment(myId, commentId, 'delete')
     const updCountRes = await CommentModel.updSourceCount(commentType, relatedId, -1)
-    console.log(delRes, updUserRes, updCountRes)
+    // console.log(delRes, updUserRes, updCountRes)
     if (delRes.deletedCount === 1 && updUserRes.matchedCount === 1 && updCountRes.matchedCount === 1) {
       ctx.body = {
         type: 'success',
@@ -229,9 +229,9 @@ class CommentController {
     try {
       const myId = ctx.state.user.id
       const { commentId } = ctx.request.query
-      console.log('commentId', commentId)
+      // console.log('commentId', commentId)
       const { _doc: commentData } = await CommentModel.getComment(commentId)
-      console.log(commentData)
+      // console.log(commentData)
       const islike = await CommentModel.isLike(myId, commentId)
       commentData.is_like = islike
       ctx.body = {

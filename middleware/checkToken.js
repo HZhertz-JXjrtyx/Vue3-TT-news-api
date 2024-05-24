@@ -2,6 +2,7 @@ import jwt from 'jsonwebtoken'
 import { PUBLIC_KEY } from '../app/config.js'
 
 async function check(ctx, next) {
+  // console.log(ctx.path)
   if (
     ctx.path.startsWith('/user/login') ||
     ctx.path.startsWith('/user/register') ||
