@@ -1,14 +1,14 @@
 import MessageModel from '../../model/user/messageModel.js'
-import WebSocketServer from '../../utils/WebSocketServer.js'
+import { sendChat, sendChatMessage } from '../../utils/sendMessage.js'
 class MessageController {
   // 获取用户通知列表
   async getNotifyList(ctx) {
-    const { _id: userId } = ctx.state.user
-    // console.log(userId)
+    const { _id: my_id } = ctx.state.user
+    // console.log(my_id)
     const [commentRes, likeRes, followRes] = await Promise.all([
-      MessageModel.getNotificationList(userId, 'comment'),
-      MessageModel.getNotificationList(userId, 'like'),
-      MessageModel.getNotificationList(userId, 'follow'),
+      MessageModel.getNotificationList(my_id, 'comment'),
+      MessageModel.getNotificationList(my_id, 'like'),
+      MessageModel.getNotificationList(my_id, 'follow'),
     ])
     ctx.body = {
       type: 'success',
@@ -32,11 +32,11 @@ class MessageController {
   }
   // 获取通知消息内容
   async getNotifyDetail(ctx) {
-    const { _id: userId } = ctx.state.user
+    const { _id: my_id } = ctx.state.user
     const { type, page, size } = ctx.request.query
-    // console.log(userId, type, page, size)
+    // console.log(my_id, type, page, size)
     const offset = (page - 1) * size
-    const data = await MessageModel.getNotificationDetail(userId, type, offset, parseInt(size))
+    const data = await MessageModel.getNotificationDetail(my_id, type, offset, parseInt(size))
     ctx.body = {
       type: 'success',
       status: 200,
@@ -47,9 +47,9 @@ class MessageController {
 
   // 获取用户对话列表
   async getChatList(ctx) {
-    const { _id: userId } = ctx.state.user
-    // console.log(userId)
-    const data = await MessageModel.getConversationList(userId)
+    const { _id: my_id } = ctx.state.user
+    // console.log(my_id)
+    const data = await MessageModel.getConversationList(my_id)
     ctx.body = {
       type: 'success',
       status: 200,
@@ -59,10 +59,10 @@ class MessageController {
   }
   // 获取对话消息内容
   async getChatDetail(ctx) {
-    const { _id: userId } = ctx.state.user
+    const { _id: my_id } = ctx.state.user
     const { conversationId } = ctx.request.query
-    // console.log(userId, conversationId)
-    const data = await MessageModel.getConversationDetail(userId, conversationId)
+    // console.log(my_id, conversationId)
+    const data = await MessageModel.getConversationDetail(my_id, conversationId)
     ctx.body = {
       type: 'success',
       status: 200,
@@ -91,23 +91,11 @@ class MessageController {
     const { _id: my_id } = ctx.state.user
     const { interlocutor } = ctx.request.body
     console.log(my_id, interlocutor)
-    const newConversation = await MessageModel.addConversation(my_id, interlocutor)
-    console.log(newConversation)
-    if (newConversation._id) {
-      const ourSide = newConversation.participants.find((p) => String(p.user._id) === my_id)
-      const otherSide = newConversation.participants.find((p) => String(p.user._id) === interlocutor)
-
-      new WebSocketServer().sendBySocketToUser('chat', interlocutor, {
-        type: 'success',
-        status: 200,
-        message: '新的对话',
-        data: {
-          _id: newConversation._id,
-          interlocutor: ourSide.user,
-          last_message: otherSide.last_visible_message,
-          unread_count: otherSide.unread_count,
-        },
-      })
+    const addRes = await MessageModel.addConversation(my_id, interlocutor)
+    console.log(addRes)
+    if (addRes._id) {
+      const newConversation = await MessageModel.findConversation(addRes._id)
+      await sendChat(my_id, interlocutor, newConversation)
       ctx.body = {
         type: 'success',
         status: 200,
@@ -119,59 +107,43 @@ class MessageController {
 
   // 新增对话消息
   async addChatMessage(ctx) {
-    const { _id: userId } = ctx.state.user
+    const { _id: my_id } = ctx.state.user
     const { receiverId, conversationId, content, createdAt } = ctx.request.body
-    // console.log(userId, receiverId, conversationId, content, createdAt)
-    const result = await MessageModel.addConversationMessage(
-      userId,
+    console.log(my_id, receiverId, conversationId, content, createdAt)
+    // 接收者列表中是否存在对话/对话对接受者是否可见
+    const info = await MessageModel.findConversation(conversationId)
+    const isVisible = info.participants.find((p) => String(p.user._id) === my_id).visible
+    console.log('isVisible:', isVisible)
+
+    const addRes = await MessageModel.addConversationMessage(
+      my_id,
       receiverId,
       conversationId,
       content,
       createdAt
     )
-    if (result.newMessage._id) {
-      // 接收者列表中是否存在对话/对话对接受者是否可见
-      const conversationInfo = await MessageModel.findConversation(conversationId)
-      // console.log(conversationInfo)
-      const ourSide = conversationInfo.participants.find((p) => String(p.user._id) === receiverId)
-      const otherSide = conversationInfo.participants.find((p) => String(p.user._id) === userId)
-
-      console.log(ourSide, otherSide)
-      if (otherSide.visible) {
-        // 是：发送消息
-        new WebSocketServer().sendBySocketToUser('chat_message', receiverId, {
-          type: 'success',
-          status: 200,
-          message: '新的对话消息',
-          data: result.populatedMessage,
-        })
+    console.log('addRes', addRes)
+    if (addRes._id) {
+      const chatMessageInfo = await MessageModel.findMessage(addRes._id)
+      if (isVisible) {
+        await sendChatMessage(chatMessageInfo)
       } else {
-        // 否：发送对话
-        new WebSocketServer().sendBySocketToUser('chat', receiverId, {
-          type: 'success',
-          status: 200,
-          message: '新的对话',
-          data: {
-            _id: conversationInfo._id,
-            interlocutor: ourSide.user,
-            last_message: otherSide.last_visible_message,
-            unread_count: otherSide.unread_count,
-          },
-        })
+        const conversationInfo = await MessageModel.findConversation(addRes.related_entity)
+        await sendChat(my_id, addRes.receiver, conversationInfo)
       }
 
       ctx.body = {
         type: 'success',
         status: 200,
         message: '发送对话消息成功',
-        data: result.populatedMessage,
+        data: chatMessageInfo,
       }
     }
   }
   // 获取未读消息总数
   async getUnreadTotalCount(ctx) {
-    const { _id: userId } = ctx.state.user
-    const result = await MessageModel.getUnreadTotal(userId)
+    const { _id: my_id } = ctx.state.user
+    const result = await MessageModel.getUnreadTotal(my_id)
     // console.log(result)
     ctx.body = {
       type: 'success',
@@ -182,10 +154,10 @@ class MessageController {
   }
   // 清除未读
   async clearUnreadMessage(ctx) {
-    const { _id: userId } = ctx.state.user
+    const { _id: my_id } = ctx.state.user
     const { messageType, conversationId } = ctx.request.body
     if (['comment', 'like', 'follow'].includes(messageType)) {
-      const result = await MessageModel.clearUnreadNotify(userId, messageType)
+      const result = await MessageModel.clearUnreadNotify(my_id, messageType)
       // console.log(result)
       if (result.acknowledged) {
         ctx.body = {
@@ -196,8 +168,8 @@ class MessageController {
         }
       }
     } else if (messageType === 'chat') {
-      const result = await MessageModel.clearUnreadChat(userId, conversationId)
-      // console.log(result)
+      const result = await MessageModel.clearUnreadChat(my_id, conversationId)
+      console.log('result', result)
       if (result.updMessageRes.acknowledged && result.updConversationRes.acknowledged) {
         ctx.body = {
           type: 'success',

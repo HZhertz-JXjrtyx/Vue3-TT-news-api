@@ -5,6 +5,7 @@ import sendEmail from '../../utils/sendEmail.js'
 import UserModel from '../../model/user/userModel.js'
 import MessageModel from '../../model/user/messageModel.js'
 import renameFileBasedOnContent from '../../utils/renameFile.js'
+import { sendNotifyMessage } from '../../utils/sendMessage.js'
 
 class UserController {
   // 注册
@@ -225,6 +226,10 @@ class UserController {
               'User'
             )
             // console.log(addNotifyRes)
+            if (addNotifyRes._id) {
+              const notificationInfo = await MessageModel.findMessage(addNotifyRes._id)
+              await sendNotifyMessage(notificationInfo)
+            }
           }
           ctx.body = {
             type: 'success',

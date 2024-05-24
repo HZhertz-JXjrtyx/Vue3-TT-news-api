@@ -5,12 +5,11 @@ import bodyParser from 'koa-bodyparser'
 import Cors from 'koa2-cors'
 import Static from 'koa-static'
 import range from 'koa-range'
-// import { Server } from 'socket.io'
 import http from 'http'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import checkToken from './middleware/checkToken.js'
-import WebSocketServer from './utils/WebSocketServer.js'
+import WebSocketServer from './class/WebSocketServer.js'
 
 import userRouter from './router/user/userRouter.js'
 import channelRouter from './router/user/channelRouter.js'
@@ -24,9 +23,7 @@ import messageRouter from './router/user/messageRouter.js'
 const app = new Koa()
 
 const server = http.createServer(app.callback())
-// 创建 WebSocketServer 实例
 const webSocketServer = new WebSocketServer()
-// 初始化 WebSocket 服务器
 webSocketServer.initialize(server)
 // const io = new Server(server)
 // // 保存所有连接的对象
@@ -83,7 +80,6 @@ app.use(commentRouter.routes())
 app.use(searchRouter.routes())
 app.use(messageRouter.routes())
 
-//监听端口
 server.listen(3007, () => {
   console.log('server runing at http://127.0.0.1:3007')
 })

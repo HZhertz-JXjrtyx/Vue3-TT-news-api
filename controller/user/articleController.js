@@ -2,6 +2,7 @@ import ArticleModel from '../../model/user/articleModel.js'
 import UserModel from '../../model/user/userModel.js'
 import MessageModel from '../../model/user/messageModel.js'
 import renameFileBasedOnContent from '../../utils/renameFile.js'
+import { sendNotifyMessage } from '../../utils/sendMessage.js'
 
 class ArticleController {
   //获取文章详情
@@ -115,10 +116,14 @@ class ArticleController {
               undefined,
               articleInfo._id,
               'Article',
-							articleInfo._id,
+              articleInfo._id,
               'Article'
             )
             // console.log(addNotifyRes)
+            if (addNotifyRes._id) {
+              const notificationInfo = await MessageModel.findMessage(addNotifyRes._id)
+              await sendNotifyMessage(notificationInfo)
+            }
           }
           ctx.body = {
             type: 'success',

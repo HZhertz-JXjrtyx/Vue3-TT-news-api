@@ -2,6 +2,7 @@ import VideoModel from '../../model/user/videoModel.js'
 import UserModel from '../../model/user/userModel.js'
 import MessageModel from '../../model/user/messageModel.js'
 import renameFileBasedOnContent from '../../utils/renameFile.js'
+import { sendNotifyMessage } from '../../utils/sendMessage.js'
 
 class VideoController {
   //获取video详情
@@ -112,10 +113,14 @@ class VideoController {
               undefined,
               videoInfo._id,
               'Video',
-							videoInfo._id,
+              videoInfo._id,
               'Video'
             )
             // console.log(addNotifyRes)
+            if (addNotifyRes._id) {
+              const notificationInfo = await MessageModel.findMessage(addNotifyRes._id)
+              await sendNotifyMessage(notificationInfo)
+            }
           }
 
           ctx.body = {

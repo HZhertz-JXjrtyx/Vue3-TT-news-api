@@ -38,7 +38,7 @@ class MessageModel {
       unReadCount,
     }
   }
-  // 获取通知列表消息
+  // 获取通知消息列表
   async getNotificationDetail(userId, type, offset = 0, size = 10) {
     let notifications = await Message.find({
       receiver: userId,
@@ -67,6 +67,12 @@ class MessageModel {
     }
 
     return notifications
+  }
+  async findMessage(message_id) {
+    return await Message.findById(message_id).populate({
+      path: 'sender',
+      select: 'user_id user_nickname user_avatar',
+    })
   }
   // 新增通知消息
   async addNotifyMessage(
@@ -119,7 +125,7 @@ class MessageModel {
       }
     })
   }
-  // 获取对话列表消息
+  // 获取对话消息列表
   async getConversationDetail(userId, conversationId) {
     try {
       const conversation = await Conversation.findById(conversationId)
@@ -190,14 +196,9 @@ class MessageModel {
   }
   // 新增对话项
   async addConversation(userA, userB) {
-    const res = await Conversation.create({
+    return await Conversation.create({
       participants: [{ user: userA }, { user: userB }],
     })
-    const newConversation = await Conversation.findById(res._id).populate({
-      path: 'participants.user',
-      select: 'user_id user_nickname user_avatar',
-    })
-    return newConversation
   }
 
   // 新增对话消息
@@ -211,31 +212,27 @@ class MessageModel {
       related_entity: conversation,
       entity_type: 'Conversation',
     })
-
-    const udpRes1 = await Conversation.updateOne(
-      { _id: conversation, 'participants.user': receiver },
-      {
-        $inc: { 'participants.$.unread_count': 1 },
+    if (newMessage._id) {
+      const udpRes1 = await Conversation.updateOne(
+        { _id: conversation, 'participants.user': receiver },
+        {
+          $inc: { 'participants.$.unread_count': 1 },
+        }
+      )
+      const udpRes2 = await Conversation.updateMany(
+        { _id: conversation },
+        {
+          $push: { messages: newMessage._id },
+          $set: { 'participants.$[].last_visible_message': newMessage._id },
+        }
+      )
+      if (udpRes1.modifiedCount === 1 && udpRes2.modifiedCount === 1) {
+        return newMessage
+      } else {
+        return null
       }
-    )
-    const udpRes2 = await Conversation.updateMany(
-      { _id: conversation },
-      {
-        $push: { messages: newMessage._id },
-        $set: { 'participants.$[].last_visible_message': newMessage._id },
-      }
-    )
-    // console.log(udpRes1, udpRes2)
-    const populatedMessage = await Message.findById(newMessage._id).populate({
-      path: 'sender',
-      select: 'user_id user_nickname user_avatar',
-    })
-    // console.log(newMessage, udpRes, populatedMessage)
-    if (udpRes1.modifiedCount === 1 && udpRes2.modifiedCount === 1) {
-      return {
-        newMessage,
-        populatedMessage,
-      }
+    } else {
+      return null
     }
   }
   // 清除通知未读

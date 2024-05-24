@@ -1,6 +1,7 @@
 import CommentModel from '../../model/user/commentModel.js'
 import UserModel from '../../model/user/userModel.js'
 import MessageModel from '../../model/user/messageModel.js'
+import { sendNotifyMessage } from '../../utils/sendMessage.js'
 
 class CommentController {
   // 获取评论列表
@@ -113,7 +114,11 @@ class CommentController {
         commentInfo.related_work,
         commentInfo.work_type
       )
-      // console.log(addNotifyRes)
+      console.log(addNotifyRes._id)
+      if (addNotifyRes._id) {
+        const notificationInfo = await MessageModel.findMessage(addNotifyRes._id)
+        await sendNotifyMessage(notificationInfo)
+      }
     }
 
     const updUserRes = await CommentModel.updUserComment(myId, comment_id, 'add')
@@ -170,6 +175,11 @@ class CommentController {
               commentInfo.work_type
             )
             // console.log(addNotifyRes)
+            // addNotifyRes._id && (await sendNotifyMessage(addNotifyRes._id))
+            if (addNotifyRes._id) {
+              const notificationInfo = await MessageModel.findMessage(addNotifyRes._id)
+              await sendNotifyMessage(notificationInfo)
+            }
           }
 
           ctx.body = {
