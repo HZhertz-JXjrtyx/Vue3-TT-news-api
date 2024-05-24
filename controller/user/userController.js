@@ -198,9 +198,9 @@ class UserController {
   }
   // 关注、取消关注用户
   async updateUserFollow(ctx) {
-    const myId = ctx.state.user.id
-    const my_id = ctx.state.user._id
+    const { id: myId, _id: my_id } = ctx.state.user
     const { userId, type } = ctx.request.body
+    console.log(myId, my_id, userId, type)
     //  关注
     if (type) {
       const res = await UserModel.isFollowing(myId, userId)
@@ -215,20 +215,25 @@ class UserController {
         } else {
           const userInfo = await UserModel.getInfo(userId)
           if (my_id !== String(userInfo._id)) {
-            const addNotifyRes = await MessageModel.addNotifyMessage(
-              '关注了你',
-              my_id,
-              userInfo._id,
-              Date.now(),
-              'follow',
-              undefined,
-              my_id,
-              'User'
-            )
-            // console.log(addNotifyRes)
-            if (addNotifyRes._id) {
-              const notificationInfo = await MessageModel.findMessage(addNotifyRes._id)
-              await sendNotifyMessage(notificationInfo)
+            // 是否已有通知
+            const isRepeat = await MessageModel.findNotifyByUserAndType(my_id, userInfo._id, 'follow', my_id)
+            // console.log('isRepeat', isRepeat)
+            if (!isRepeat) {
+              const addNotifyRes = await MessageModel.addNotifyMessage(
+                '关注了你',
+                my_id,
+                userInfo._id,
+                Date.now(),
+                'follow',
+                undefined,
+                my_id,
+                'User'
+              )
+              // console.log(addNotifyRes)
+              if (addNotifyRes._id) {
+                const notificationInfo = await MessageModel.findMessage(addNotifyRes._id)
+                await sendNotifyMessage(notificationInfo)
+              }
             }
           }
           ctx.body = {

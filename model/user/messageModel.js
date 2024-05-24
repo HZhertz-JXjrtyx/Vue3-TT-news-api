@@ -74,6 +74,16 @@ class MessageModel {
       select: 'user_id user_nickname user_avatar',
     })
   }
+  // 是否已有通知/点赞与关注不要重复通知
+  // 通过发送方,接收方,消息类型,相关项查找
+  async findNotifyByUserAndType(sender, receiver, type, related_entity) {
+    return Message.findOne({
+      sender,
+      receiver,
+      type,
+      related_entity,
+    })
+  }
   // 新增通知消息
   async addNotifyMessage(
     content,

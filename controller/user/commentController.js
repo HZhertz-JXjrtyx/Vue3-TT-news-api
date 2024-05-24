@@ -162,23 +162,32 @@ class CommentController {
           const authorInfo = await UserModel.getInfo(commentInfo.user_info.user_id)
 
           if (my_id !== String(authorInfo._id)) {
-            const addNotifyRes = await MessageModel.addNotifyMessage(
-              '赞了你的评论',
+            // 是否已有通知
+            const isRepeat = await MessageModel.findNotifyByUserAndType(
               my_id,
               authorInfo._id,
-              Date.now(),
               'like',
-              undefined,
-              commentInfo._id,
-              'Comment',
-              commentInfo.related_work,
-              commentInfo.work_type
+              commentInfo._id
             )
-            // console.log(addNotifyRes)
-            // addNotifyRes._id && (await sendNotifyMessage(addNotifyRes._id))
-            if (addNotifyRes._id) {
-              const notificationInfo = await MessageModel.findMessage(addNotifyRes._id)
-              await sendNotifyMessage(notificationInfo)
+            console.log('isRepeat', isRepeat)
+            if (!isRepeat) {
+              const addNotifyRes = await MessageModel.addNotifyMessage(
+                '赞了你的评论',
+                my_id,
+                authorInfo._id,
+                Date.now(),
+                'like',
+                undefined,
+                commentInfo._id,
+                'Comment',
+                commentInfo.related_work,
+                commentInfo.work_type
+              )
+              // console.log(addNotifyRes)
+              if (addNotifyRes._id) {
+                const notificationInfo = await MessageModel.findMessage(addNotifyRes._id)
+                await sendNotifyMessage(notificationInfo)
+              }
             }
           }
 

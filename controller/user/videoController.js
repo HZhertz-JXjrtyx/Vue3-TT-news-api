@@ -104,7 +104,17 @@ class VideoController {
           const authorInfo = await UserModel.getInfo(videoInfo.user_id)
 
           if (my_id !== String(authorInfo._id)) {
-            const addNotifyRes = await MessageModel.addNotifyMessage(
+
+						 // 是否已有通知
+						 const isRepeat = await MessageModel.findNotifyByUserAndType(
+              my_id,
+              authorInfo._id,
+              'like',
+              videoInfo._id
+            )
+            // console.log('isRepeat', isRepeat)
+						if (!isRepeat) {
+							const addNotifyRes = await MessageModel.addNotifyMessage(
               '赞了你的视频',
               my_id,
               authorInfo._id,
@@ -121,6 +131,8 @@ class VideoController {
               const notificationInfo = await MessageModel.findMessage(addNotifyRes._id)
               await sendNotifyMessage(notificationInfo)
             }
+						}
+            
           }
 
           ctx.body = {

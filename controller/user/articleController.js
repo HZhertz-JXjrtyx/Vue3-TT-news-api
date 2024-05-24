@@ -107,22 +107,32 @@ class ArticleController {
           const authorInfo = await UserModel.getInfo(articleInfo.user_id)
 
           if (my_id !== String(authorInfo._id)) {
-            const addNotifyRes = await MessageModel.addNotifyMessage(
-              '赞了你的文章',
+            // 是否已有通知
+            const isRepeat = await MessageModel.findNotifyByUserAndType(
               my_id,
               authorInfo._id,
-              Date.now(),
               'like',
-              undefined,
-              articleInfo._id,
-              'Article',
-              articleInfo._id,
-              'Article'
+              articleInfo._id
             )
-            // console.log(addNotifyRes)
-            if (addNotifyRes._id) {
-              const notificationInfo = await MessageModel.findMessage(addNotifyRes._id)
-              await sendNotifyMessage(notificationInfo)
+            console.log('isRepeat', isRepeat)
+            if (!isRepeat) {
+              const addNotifyRes = await MessageModel.addNotifyMessage(
+                '赞了你的文章',
+                my_id,
+                authorInfo._id,
+                Date.now(),
+                'like',
+                undefined,
+                articleInfo._id,
+                'Article',
+                articleInfo._id,
+                'Article'
+              )
+              // console.log(addNotifyRes)
+              if (addNotifyRes._id) {
+                const notificationInfo = await MessageModel.findMessage(addNotifyRes._id)
+                await sendNotifyMessage(notificationInfo)
+              }
             }
           }
           ctx.body = {
