@@ -114,7 +114,7 @@ class ArticleController {
               'like',
               articleInfo._id
             )
-            console.log('isRepeat', isRepeat)
+            // console.log('isRepeat', isRepeat)
             if (!isRepeat) {
               const addNotifyRes = await MessageModel.addNotifyMessage(
                 '赞了你的文章',

@@ -114,7 +114,7 @@ class CommentController {
         commentInfo.related_work,
         commentInfo.work_type
       )
-      console.log(addNotifyRes._id)
+      // console.log(addNotifyRes._id)
       if (addNotifyRes._id) {
         const notificationInfo = await MessageModel.findMessage(addNotifyRes._id)
         await sendNotifyMessage(notificationInfo)
@@ -169,7 +169,7 @@ class CommentController {
               'like',
               commentInfo._id
             )
-            console.log('isRepeat', isRepeat)
+            // console.log('isRepeat', isRepeat)
             if (!isRepeat) {
               const addNotifyRes = await MessageModel.addNotifyMessage(
                 '赞了你的评论',

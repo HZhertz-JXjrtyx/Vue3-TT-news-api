@@ -48,8 +48,9 @@ class MessageController {
   // 获取用户对话列表
   async getChatList(ctx) {
     const { _id: my_id } = ctx.state.user
-    // console.log(my_id)
-    const data = await MessageModel.getConversationList(my_id)
+    const { pre, size } = ctx.request.query
+    console.log(my_id, pre, size)
+    const data = await MessageModel.getConversationList(my_id, pre, size)
     ctx.body = {
       type: 'success',
       status: 200,
@@ -90,9 +91,9 @@ class MessageController {
   async addChat(ctx) {
     const { _id: my_id } = ctx.state.user
     const { interlocutor } = ctx.request.body
-    console.log(my_id, interlocutor)
+    // console.log(my_id, interlocutor)
     const addRes = await MessageModel.addConversation(my_id, interlocutor)
-    console.log(addRes)
+    // console.log(addRes)
     if (addRes._id) {
       const newConversation = await MessageModel.findConversation(addRes._id)
       await sendChat(my_id, interlocutor, newConversation)
@@ -109,11 +110,11 @@ class MessageController {
   async addChatMessage(ctx) {
     const { _id: my_id } = ctx.state.user
     const { receiverId, conversationId, content, createdAt } = ctx.request.body
-    console.log(my_id, receiverId, conversationId, content, createdAt)
+    // console.log(my_id, receiverId, conversationId, content, createdAt)
     // 接收者列表中是否存在对话/对话对接受者是否可见
     const info = await MessageModel.findConversation(conversationId)
     const isVisible = info.participants.find((p) => String(p.user._id) === my_id).visible
-    console.log('isVisible:', isVisible)
+    // console.log('isVisible:', isVisible)
 
     const addRes = await MessageModel.addConversationMessage(
       my_id,
@@ -122,7 +123,7 @@ class MessageController {
       content,
       createdAt
     )
-    console.log('addRes', addRes)
+    // console.log('addRes', addRes)
     if (addRes._id) {
       const chatMessageInfo = await MessageModel.findMessage(addRes._id)
       if (isVisible) {
@@ -169,7 +170,7 @@ class MessageController {
       }
     } else if (messageType === 'chat') {
       const result = await MessageModel.clearUnreadChat(my_id, conversationId)
-      console.log('result', result)
+      // console.log('result', result)
       if (result.updMessageRes.acknowledged && result.updConversationRes.acknowledged) {
         ctx.body = {
           type: 'success',

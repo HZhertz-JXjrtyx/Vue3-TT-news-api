@@ -8,8 +8,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    console.log('req.body.folder:', req.body.folder)
-    console.log(file)
+    // console.log('req.body.folder:', req.body.folder)
+    // console.log(file)
     cb(null, path.join(__dirname, '../public/', req.body.folder))
   },
 

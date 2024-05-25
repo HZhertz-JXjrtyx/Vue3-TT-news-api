@@ -6,7 +6,7 @@ function validateSchemaJoi(method, schema) {
     } else {
       data = await ctx.request.body
     }
-    console.log('获得data', data)
+    // console.log('获得data', data)
     const { error } = schema.validate(data)
     if (error) {
       ctx.body = error

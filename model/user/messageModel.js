@@ -1,5 +1,5 @@
 import mongoose from 'mongoose'
-// const ObjectId = mongoose.Types.ObjectId
+const ObjectId = mongoose.Types.ObjectId
 import Conversation from '../../schema/db/conversation.js'
 import Message from '../../schema/db/message.js'
 import User from '../../schema/db/users.js'
@@ -50,7 +50,7 @@ class MessageModel {
       })
       .populate('related_content')
       .populate('related_entity')
-      .sort('created_at')
+      .sort({ created_at: -1 })
       .skip(offset)
       .limit(size)
       .exec()
@@ -112,19 +112,80 @@ class MessageModel {
     return await Message.create(newMessage)
   }
   // 获取对话列表
-  async getConversationList(userId) {
-    const conversations = await Conversation.find({
-      'participants.user': userId,
-      'participants.visible': true,
-    })
-      .populate({
-        path: 'participants.user',
-        select: 'user_id user_nickname user_avatar',
-      })
-      .populate('participants.last_visible_message')
-      .sort({ 'participants.last_visible_message.created_at': -1 })
+  async getConversationList(userId, pre, size) {
+    const conversations = await Conversation.aggregate([
+      {
+        $match: {
+          'participants.user': new ObjectId(userId),
+          'participants.visible': true,
+        },
+      },
+      {
+        $unwind: '$participants',
+      },
+      {
+        $lookup: {
+          from: 'users',
+          let: { user_id: '$participants.user' },
+          pipeline: [
+            {
+              $match: {
+                $expr: { $eq: ['$_id', '$$user_id'] },
+              },
+            },
+            {
+              $project: {
+                user_id: 1,
+                user_nickname: 1,
+                user_avatar: 1,
+              },
+            },
+          ],
+          as: 'participants.user',
+        },
+      },
+      {
+        $unwind: '$participants.user',
+      },
+      {
+        $lookup: {
+          from: 'messages',
+          localField: 'participants.last_visible_message',
+          foreignField: '_id',
+          as: 'participants.last_visible_message',
+        },
+      },
+      {
+        $unwind: '$participants.last_visible_message',
+      },
+      {
+        $group: {
+          _id: '$_id',
+          participants: { $push: '$participants' },
+          last_visible_message_created_at: {
+            $first: {
+              $cond: [
+                { $eq: ['$participants.user._id', new ObjectId(userId)] },
+                '$participants.last_visible_message.created_at',
+                null,
+              ],
+            },
+          },
+        },
+      },
+      {
+        $sort: { last_visible_message_created_at: -1 },
+      },
+    ])
+    console.log('conversations', conversations)
+    let index = 0
+    if (pre) {
+      index = conversations.findIndex((conversation) => String(conversation._id) === pre)
+      index += 1
+    }
+    const paginatedConversations = conversations.slice(index, index + size)
 
-    return conversations.map((conversation) => {
+    return paginatedConversations.map((conversation) => {
       const otherSide = conversation.participants.find((p) => String(p.user._id) !== userId)
       const ourSide = conversation.participants.find((p) => String(p.user._id) === userId)
       return {

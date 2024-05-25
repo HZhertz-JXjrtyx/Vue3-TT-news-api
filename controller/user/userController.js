@@ -200,7 +200,7 @@ class UserController {
   async updateUserFollow(ctx) {
     const { id: myId, _id: my_id } = ctx.state.user
     const { userId, type } = ctx.request.body
-    console.log(myId, my_id, userId, type)
+    // console.log(myId, my_id, userId, type)
     //  关注
     if (type) {
       const res = await UserModel.isFollowing(myId, userId)
