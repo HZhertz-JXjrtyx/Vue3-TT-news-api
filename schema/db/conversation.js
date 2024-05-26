@@ -12,7 +12,7 @@ const conversationSchema = new mongoose.Schema({
       },
       visible: {
         type: Boolean,
-        default: true,
+        default: false,
       },
       unread_count: {
         type: Number,

@@ -69,10 +69,15 @@ class MessageModel {
     return notifications
   }
   async findMessage(message_id) {
-    return await Message.findById(message_id).populate({
-      path: 'sender',
-      select: 'user_id user_nickname user_avatar',
-    })
+    return await Message.findById(message_id)
+      .populate({
+        path: 'sender',
+        select: 'user_id user_nickname user_avatar',
+      })
+      .populate({
+        path: 'receiver',
+        select: 'user_id user_nickname user_avatar',
+      })
   }
   // 是否已有通知/点赞与关注不要重复通知
   // 通过发送方,接收方,消息类型,相关项查找
@@ -116,8 +121,12 @@ class MessageModel {
     const conversations = await Conversation.aggregate([
       {
         $match: {
-          'participants.user': new ObjectId(userId),
-          'participants.visible': true,
+          participants: {
+            $elemMatch: {
+              user: new ObjectId(userId),
+              visible: true,
+            },
+          },
         },
       },
       {
@@ -177,7 +186,7 @@ class MessageModel {
         $sort: { last_visible_message_created_at: -1 },
       },
     ])
-    console.log('conversations', conversations)
+    // console.log('conversations', conversations)
     let index = 0
     if (pre) {
       index = conversations.findIndex((conversation) => String(conversation._id) === pre)
@@ -260,16 +269,38 @@ class MessageModel {
     return conversations
   }
   async findConversation(conversationId) {
-    return await Conversation.findById(conversationId).populate({
-      path: 'participants.user',
-      select: 'user_id user_nickname user_avatar',
-    })
+    return await Conversation.findById(conversationId)
+      .populate({
+        path: 'participants.user',
+        select: 'user_id user_nickname user_avatar',
+      })
+      .populate('participants.last_visible_message')
   }
   // 新增对话项
   async addConversation(userA, userB) {
     return await Conversation.create({
       participants: [{ user: userA }, { user: userB }],
     })
+  }
+  // 删除(更新)对话项
+  async deleteConversation(userId, conversationId) {
+    // 找到对话
+    const conversation = await Conversation.findById(conversationId)
+
+    // 找到 last_visible_message 字段的值
+    const lastVisibleMessage = conversation.participants.find(
+      (participant) => participant.user.toString() === userId
+    ).last_visible_message
+    return await Conversation.findOneAndUpdate(
+      { _id: conversationId, 'participants.user': userId },
+      {
+        $set: {
+          'participants.$.visible': false,
+          'participants.$.last_invisible_message': lastVisibleMessage,
+        },
+      },
+      { new: true }
+    )
   }
 
   // 新增对话消息
@@ -288,13 +319,14 @@ class MessageModel {
         { _id: conversation, 'participants.user': receiver },
         {
           $inc: { 'participants.$.unread_count': 1 },
+          // $set: { 'participants.$.visible': true },
         }
       )
       const udpRes2 = await Conversation.updateMany(
         { _id: conversation },
         {
           $push: { messages: newMessage._id },
-          $set: { 'participants.$[].last_visible_message': newMessage._id },
+          $set: { 'participants.$[].last_visible_message': newMessage._id, 'participants.$[].visible': true },
         }
       )
       if (udpRes1.modifiedCount === 1 && udpRes2.modifiedCount === 1) {

@@ -21,7 +21,7 @@ router.post('/chat/send', MessageController.addChatMessage)
 router.get('/unread/total', MessageController.getUnreadTotalCount)
 // 清除未读
 router.patch('/clear/unread', MessageController.clearUnreadMessage)
-// router.post('/list', MessageController.updateMessageCount)
-// //删除消息列表
+// 删除对话项
+router.delete('/chat/list', MessageController.deleteChat)
 
 export default router

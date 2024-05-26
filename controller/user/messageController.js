@@ -1,5 +1,5 @@
 import MessageModel from '../../model/user/messageModel.js'
-import { sendChat, sendChatMessage } from '../../utils/sendMessage.js'
+import { sendChatMessage } from '../../utils/sendMessage.js'
 class MessageController {
   // 获取用户通知列表
   async getNotifyList(ctx) {
@@ -49,7 +49,7 @@ class MessageController {
   async getChatList(ctx) {
     const { _id: my_id } = ctx.state.user
     const { pre, size } = ctx.request.query
-    console.log(my_id, pre, size)
+    // console.log(my_id, pre, size)
     const data = await MessageModel.getConversationList(my_id, pre, size)
     ctx.body = {
       type: 'success',
@@ -95,13 +95,13 @@ class MessageController {
     const addRes = await MessageModel.addConversation(my_id, interlocutor)
     // console.log(addRes)
     if (addRes._id) {
-      const newConversation = await MessageModel.findConversation(addRes._id)
-      await sendChat(my_id, interlocutor, newConversation)
+      // const newConversation = await MessageModel.findConversation(addRes._id)
+
       ctx.body = {
         type: 'success',
         status: 200,
         message: '新增对话项成功',
-        data: newConversation,
+        data: addRes,
       }
     }
   }
@@ -110,11 +110,7 @@ class MessageController {
   async addChatMessage(ctx) {
     const { _id: my_id } = ctx.state.user
     const { receiverId, conversationId, content, createdAt } = ctx.request.body
-    // console.log(my_id, receiverId, conversationId, content, createdAt)
-    // 接收者列表中是否存在对话/对话对接受者是否可见
-    const info = await MessageModel.findConversation(conversationId)
-    const isVisible = info.participants.find((p) => String(p.user._id) === my_id).visible
-    // console.log('isVisible:', isVisible)
+    console.log(my_id, receiverId, conversationId, content, createdAt)
 
     const addRes = await MessageModel.addConversationMessage(
       my_id,
@@ -123,15 +119,12 @@ class MessageController {
       content,
       createdAt
     )
-    // console.log('addRes', addRes)
+    console.log('addRes', addRes)
     if (addRes._id) {
       const chatMessageInfo = await MessageModel.findMessage(addRes._id)
-      if (isVisible) {
-        await sendChatMessage(chatMessageInfo)
-      } else {
-        const conversationInfo = await MessageModel.findConversation(addRes.related_entity)
-        await sendChat(my_id, addRes.receiver, conversationInfo)
-      }
+
+      const conversationInfo = await MessageModel.findConversation(addRes.related_entity)
+      await sendChatMessage(my_id, String(addRes.receiver), conversationInfo, chatMessageInfo)
 
       ctx.body = {
         type: 'success',
@@ -171,14 +164,29 @@ class MessageController {
     } else if (messageType === 'chat') {
       const result = await MessageModel.clearUnreadChat(my_id, conversationId)
       // console.log('result', result)
-      if (result.updMessageRes.acknowledged && result.updConversationRes.acknowledged) {
-        ctx.body = {
-          type: 'success',
-          status: 200,
-          message: '清除未读chat通知成功',
-          clearCount: result.updMessageRes.modifiedCount,
-        }
+      ctx.body = {
+        type: 'success',
+        status: 200,
+        message: '清除未读chat通知成功',
+        clearCount: result.updMessageRes.modifiedCount,
       }
+    }
+  }
+  // 删除对话项
+  async deleteChat(ctx) {
+    const { _id: my_id } = ctx.state.user
+    const { conversationId } = ctx.request.query
+    console.log(my_id, conversationId)
+    // 处理未读
+    const clearRes = await MessageModel.clearUnreadChat(my_id, conversationId)
+    // 更新可见
+    const deleteRes = await MessageModel.deleteConversation(my_id, conversationId)
+    console.log(clearRes, deleteRes)
+    ctx.body = {
+      type: 'success',
+      status: 200,
+      message: '删除对话项成功',
+      clearCount: clearRes.updMessageRes.modifiedCount,
     }
   }
 }

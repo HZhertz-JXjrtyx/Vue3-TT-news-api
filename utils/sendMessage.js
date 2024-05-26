@@ -10,30 +10,24 @@ export async function sendNotifyMessage(newNotification) {
   })
 }
 
-// 发送Socket消息-新增对话
-export async function sendChat(senderId, receiverId, newConversation) {
-  const sender = newConversation.participants.find((p) => String(p.user._id) === senderId)
-  const receiver = newConversation.participants.find((p) => String(p.user._id) === receiverId)
+// 发送 Socket 消息-新增对话消息
+// 传入 chatMessage 是因为 conversation 中的last_visible_message填充了
+// 但是 last_visible_message 中的 user 没有填充
+export async function sendChatMessage(senderId, receiverId, conversation, chatMessage) {
+  console.log(senderId, receiverId, conversation)
+  const sender = conversation.participants.find((p) => String(p.user._id) === senderId)
+  const receiver = conversation.participants.find((p) => String(p.user._id) === receiverId)
+  console.log(sender, receiver)
 
-  new WebSocketServer().sendBySocketToUser('chat', receiverId, {
-    type: 'success',
-    status: 200,
-    message: '新的对话',
-    data: {
-      _id: newConversation._id,
-      interlocutor: sender.user,
-      last_message: receiver.last_visible_message,
-      unread_count: receiver.unread_count,
-    },
-  })
-}
-// 发送Socket消息-新增对话消息
-export async function sendChatMessage(newChatMessage) {
-  console.log(newChatMessage)
-  new WebSocketServer().sendBySocketToUser('chat_message', newChatMessage.receiver, {
+  new WebSocketServer().sendBySocketToUser('chat_message', receiverId, {
     type: 'success',
     status: 200,
     message: '新的对话消息',
-    data: newChatMessage,
+    data: {
+      _id: conversation._id,
+      interlocutor: sender.user,
+      last_message: chatMessage,
+      unread_count: receiver.unread_count,
+    },
   })
 }

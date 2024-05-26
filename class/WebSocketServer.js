@@ -30,10 +30,10 @@ class WebSocketServer {
           delete WebSocketServer.users[userId]
         })
 
-        socket.on('chat message', (data) => {
-          const { senderId, receiverId, msg } = data
-          // 处理消息
-        })
+        // socket.on('chat message', (data) => {
+        //   const { senderId, receiverId, msg } = data
+        //   // 处理消息
+        // })
       })
     }
   }
