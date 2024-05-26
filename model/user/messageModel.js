@@ -357,6 +357,15 @@ class MessageModel {
       updConversationRes,
     }
   }
+  // 清除所有未读对话
+  async clearUnreadAll(userId) {
+    await Conversation.updateMany(
+      { 'participants.user': userId },
+      { $set: { 'participants.$.unread_count': 0 } }
+    )
+    await Message.updateMany({ receiver: userId }, { $set: { isRead: true } })
+  }
+
   // 获取未读消息总数
   async getUnreadTotal(userId) {
     return await Message.countDocuments({

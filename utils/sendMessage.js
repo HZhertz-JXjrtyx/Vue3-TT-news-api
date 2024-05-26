@@ -2,7 +2,7 @@ import WebSocketServer from '../class/WebSocketServer.js'
 
 // 发送Socket消息-新增通知消息
 export async function sendNotifyMessage(newNotification) {
-  new WebSocketServer().sendBySocketToUser('notify_message', newNotification.receiver, {
+  new WebSocketServer().sendBySocketToUser('notify_message', newNotification.receiver._id, {
     type: 'success',
     status: 200,
     message: `新的${newNotification.type}通知`,
@@ -11,8 +11,7 @@ export async function sendNotifyMessage(newNotification) {
 }
 
 // 发送 Socket 消息-新增对话消息
-// 传入 chatMessage 是因为 conversation 中的last_visible_message填充了
-// 但是 last_visible_message 中的 user 没有填充
+// 传入 chatMessage 是因为 conversation 中的 last_visible_message.user 没有填充
 export async function sendChatMessage(senderId, receiverId, conversation, chatMessage) {
   console.log(senderId, receiverId, conversation)
   const sender = conversation.participants.find((p) => String(p.user._id) === senderId)

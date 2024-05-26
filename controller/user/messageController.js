@@ -170,6 +170,13 @@ class MessageController {
         message: '清除未读chat通知成功',
         clearCount: result.updMessageRes.modifiedCount,
       }
+    } else if (messageType === 'all') {
+      await MessageModel.clearUnreadAll(my_id)
+      ctx.body = {
+        type: 'success',
+        status: 200,
+        message: '清除所有未读成功',
+      }
     }
   }
   // 删除对话项

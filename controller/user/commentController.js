@@ -115,7 +115,7 @@ class CommentController {
         commentInfo.work_type
       )
       // console.log(addNotifyRes._id)
-      if (addNotifyRes._id) {
+      if (addNotifyRes) {
         const notificationInfo = await MessageModel.findMessage(addNotifyRes._id)
         await sendNotifyMessage(notificationInfo)
       }
