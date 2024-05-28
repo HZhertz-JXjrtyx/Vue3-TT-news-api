@@ -4,7 +4,7 @@ import ArticleController from '../../controller/user/articleController.js'
 // import validateSchemaJoi from '../../middleware/schema.js'
 // import { reg_login_schema } from '../../schema/joi/my.js'
 
-const router = new Router({ prefix: '/article' })
+const router = new Router({ prefix: '/api/article' })
 
 // 获取文章详情
 router.get('/info', ArticleController.getArticleInfo)

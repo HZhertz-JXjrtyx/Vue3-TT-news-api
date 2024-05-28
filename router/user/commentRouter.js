@@ -1,7 +1,7 @@
 import Router from 'koa-router' // 引入koa-router
 import CommentController from '../../controller/user/commentController.js'
 
-const router = new Router({ prefix: '/comment' }) // 创建路由，支持传递参数
+const router = new Router({ prefix: '/api/comment' }) // 创建路由，支持传递参数
 // 获取评论或评论回复列表
 router.get('/list', CommentController.getCommentsList)
 // 获取评论详情

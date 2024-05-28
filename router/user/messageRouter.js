@@ -1,7 +1,7 @@
 import Router from 'koa-router' // 引入koa-router
 import MessageController from '../../controller/user/messageController.js'
 
-const router = new Router({ prefix: '/message' })
+const router = new Router({ prefix: '/api/message' })
 
 //获取用户通知列表
 router.get('/notify/list', MessageController.getNotifyList)

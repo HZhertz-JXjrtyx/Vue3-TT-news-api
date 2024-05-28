@@ -2,7 +2,7 @@ import Router from 'koa-router'
 import { videoUpload, imageUpload } from '../../middleware/upload.js'
 import VideoController from '../../controller/user/videoController.js'
 
-const router = new Router({ prefix: '/video' })
+const router = new Router({ prefix: '/api/video' })
 
 // 获取视频详情
 router.get('/info', VideoController.getVideoInfo)

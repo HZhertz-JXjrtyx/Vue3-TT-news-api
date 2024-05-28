@@ -2,13 +2,13 @@ import jwt from 'jsonwebtoken'
 import { PUBLIC_KEY } from '../app/config.js'
 
 async function check(ctx, next) {
-  // console.log(ctx.path)
+  console.log(ctx.path)
   if (
-    ctx.path.startsWith('/user/login') ||
-    ctx.path.startsWith('/user/register') ||
-    ctx.path.startsWith('/user/checkname') ||
-    ctx.path.startsWith('/user/codes') ||
-    ctx.path.startsWith('/channel/all') ||
+    ctx.path.startsWith('/api/user/login') ||
+    ctx.path.startsWith('/api/user/register') ||
+    ctx.path.startsWith('/api/user/checkname') ||
+    ctx.path.startsWith('/api/user/codes') ||
+    ctx.path.startsWith('/api/channel/all') ||
     ctx.path.startsWith('/admin_avatar') ||
     ctx.path.startsWith('/article_images') ||
     ctx.path.startsWith('/other') ||
@@ -20,16 +20,17 @@ async function check(ctx, next) {
     // 不需要验证token
     await next()
   } else if (
-    ctx.path.startsWith('/channel/user') ||
-    ctx.path.startsWith('/news/list') ||
-    ctx.path.startsWith('/news/article') ||
-    ctx.path.startsWith('/news/hotlist') ||
-    ctx.path.startsWith('/article/info') ||
-    ctx.path.startsWith('/video/info') ||
-    ctx.path.startsWith('/comment/list') ||
-    ctx.path.startsWith('/comment/detail') ||
-    ctx.path.startsWith('/user/detail') ||
-    ctx.path.startsWith('/user/works')
+    ctx.path.startsWith('/api/channel/user') ||
+    ctx.path.startsWith('/api/news/list') ||
+    ctx.path.startsWith('/api/news/article') ||
+    ctx.path.startsWith('/api/news/hotlist') ||
+    ctx.path.startsWith('/api/article/info') ||
+    ctx.path.startsWith('/api/video/info') ||
+    ctx.path.startsWith('/api/comment/list') ||
+    ctx.path.startsWith('/api/comment/detail') ||
+    ctx.path.startsWith('/api/user/detail') ||
+    ctx.path.startsWith('/api/user/works') ||
+    ctx.path.startsWith('/api/user/isfollow')
   ) {
     // 可能会携带token
     if (ctx.header.authorization) {

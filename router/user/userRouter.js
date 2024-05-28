@@ -2,7 +2,7 @@ import Router from 'koa-router'
 import { imageUpload } from '../../middleware/upload.js'
 import UserController from '../../controller/user/userController.js'
 
-const router = new Router({ prefix: '/user' })
+const router = new Router({ prefix: '/api/user' })
 
 // 登录
 router.post('/login', UserController.login)
